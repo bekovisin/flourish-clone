@@ -1,0 +1,65 @@
+import {
+  pgTable,
+  serial,
+  varchar,
+  integer,
+  timestamp,
+  jsonb,
+  text,
+  boolean,
+} from 'drizzle-orm/pg-core';
+
+export const folders = pgTable('folders', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  parentId: integer('parent_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const projects = pgTable('projects', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  folderId: integer('folder_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const visualizations = pgTable('visualizations', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull().default('Untitled visualization'),
+  chartType: varchar('chart_type', { length: 50 }).notNull().default('bar_stacked'),
+  data: jsonb('data').notNull().default([]),
+  settings: jsonb('settings').notNull().default({}),
+  columnMapping: jsonb('column_mapping').default({}),
+  thumbnail: text('thumbnail'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const reportVersions = pgTable('report_versions', {
+  id: serial('id').primaryKey(),
+  visualizationId: integer('visualization_id').notNull(),
+  versionName: varchar('version_name', { length: 255 }).notNull(),
+  width: integer('width'),
+  height: integer('height'),
+  isAutoSize: boolean('is_auto_size').default(true).notNull(),
+  settingsSnapshot: jsonb('settings_snapshot'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const dashboardTemplates = pgTable('dashboard_templates', {
+  id: serial('id').primaryKey(),
+  visualizationId: integer('visualization_id').notNull(),
+  templateName: varchar('template_name', { length: 255 }).notNull(),
+  dataSourceType: varchar('data_source_type', { length: 100 }),
+  dataSourceConfig: jsonb('data_source_config').default({}),
+  columnMappingTemplate: jsonb('column_mapping_template').default({}),
+  refreshInterval: integer('refresh_interval').default(30),
+  isRealtime: boolean('is_realtime').default(false),
+  settingsSnapshot: jsonb('settings_snapshot').notNull().default({}),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
