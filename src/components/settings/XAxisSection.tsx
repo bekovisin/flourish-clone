@@ -21,6 +21,8 @@ import type {
   TickPosition,
   AxisStyling,
   XAxisSettings,
+  TicksToShowMode,
+  TickMarkPosition,
 } from '@/types/chart';
 
 function SubHeader({ children }: { children: React.ReactNode }) {
@@ -159,6 +161,14 @@ export function XAxisSection() {
     update({ gridlineStyling: { ...settings.gridlineStyling, ...updates } });
   };
 
+  const updateTickMarks = (updates: Partial<XAxisSettings['tickMarks']>) => {
+    update({ tickMarks: { ...settings.tickMarks, ...updates } });
+  };
+
+  const updateAxisLine = (updates: Partial<XAxisSettings['axisLine']>) => {
+    update({ axisLine: { ...settings.axisLine, ...updates } });
+  };
+
   return (
     <AccordionSection id="x-axis" title="X axis">
       {/* Position */}
@@ -282,6 +292,26 @@ export function XAxisSection() {
         </Select>
       </SettingRow>
 
+      <NumberInput
+        label="Padding"
+        value={settings.tickPadding}
+        onChange={(v) => update({ tickPadding: v })}
+        min={-20}
+        max={40}
+        step={1}
+        suffix="px"
+      />
+
+      <NumberInput
+        label="Angle"
+        value={settings.tickAngle}
+        onChange={(v) => update({ tickAngle: v })}
+        min={-90}
+        max={90}
+        step={5}
+        suffix="°"
+      />
+
       <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={settings.showTickStyling}
@@ -291,6 +321,121 @@ export function XAxisSection() {
 
       {settings.showTickStyling && (
         <StylingPanel styling={settings.tickStyling} onChange={updateTickStyling} />
+      )}
+
+      {/* TICKS TO SHOW */}
+      <SubHeader>Ticks to show</SubHeader>
+      <p className="text-[10px] text-gray-400 -mt-1 mb-2">
+        Determines how the tick values are chosen. &quot;Auto&quot; mode chooses the ticks automatically. &quot;Number&quot; mode lets you specify how many ticks are drawn.
+      </p>
+
+      <SettingRow label="Mode">
+        <Select
+          value={settings.ticksToShowMode}
+          onValueChange={(v) => update({ ticksToShowMode: v as TicksToShowMode })}
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto" className="text-xs">Auto</SelectItem>
+            <SelectItem value="number" className="text-xs">Number</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      {settings.ticksToShowMode === 'number' && (
+        <NumberInput
+          label="Number of ticks"
+          value={settings.ticksToShowNumber}
+          onChange={(v) => update({ ticksToShowNumber: v })}
+          min={2}
+          max={50}
+          step={1}
+        />
+      )}
+
+      {/* TICK MARKS & AXIS LINE */}
+      <SubHeader>Tick Marks &amp; Axis Line</SubHeader>
+
+      <SettingRow label="Show tick marks" variant="inline">
+        <Switch
+          checked={settings.tickMarks.show}
+          onCheckedChange={(checked) => updateTickMarks({ show: checked })}
+        />
+      </SettingRow>
+
+      {settings.tickMarks.show && (
+        <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+          <SettingRow label="Position">
+            <Select
+              value={settings.tickMarks.position}
+              onValueChange={(v) => updateTickMarks({ position: v as TickMarkPosition })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="outside" className="text-xs">Outside</SelectItem>
+                <SelectItem value="inside" className="text-xs">Inside</SelectItem>
+                <SelectItem value="cross" className="text-xs">Cross</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <NumberInput
+            label="Length"
+            value={settings.tickMarks.length}
+            onChange={(v) => updateTickMarks({ length: v })}
+            min={1}
+            max={20}
+            step={1}
+            suffix="px"
+          />
+
+          <NumberInput
+            label="Width"
+            value={settings.tickMarks.width}
+            onChange={(v) => updateTickMarks({ width: v })}
+            min={0.5}
+            max={5}
+            step={0.5}
+            suffix="px"
+          />
+
+          <ColorPicker
+            label="Color"
+            value={settings.tickMarks.color}
+            onChange={(color) => updateTickMarks({ color })}
+          />
+        </div>
+      )}
+
+      <SettingRow label="Show axis line" variant="inline">
+        <Switch
+          checked={settings.axisLine.show}
+          onCheckedChange={(checked) => updateAxisLine({ show: checked })}
+        />
+      </SettingRow>
+
+      {settings.axisLine.show && (
+        <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+          <NumberInput
+            label="Width"
+            value={settings.axisLine.width}
+            onChange={(v) => updateAxisLine({ width: v })}
+            min={0.5}
+            max={5}
+            step={0.5}
+            suffix="px"
+          />
+
+          <ColorPicker
+            label="Color"
+            value={settings.axisLine.color}
+            onChange={(color) => updateAxisLine({ color })}
+          />
+        </div>
       )}
 
       {/* GRIDLINES */}

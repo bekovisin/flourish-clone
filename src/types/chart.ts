@@ -55,15 +55,24 @@ export interface BarsSettings {
 
 // Labels
 export type BarLabelStyle = 'above_bars' | 'axis';
-export type DataPointLabelPosition = 'inside' | 'outside' | 'center';
+export type DataPointLabelPosition = 'left' | 'center' | 'right';
+export type DataPointLabelColorMode = 'auto' | 'custom';
 export type StackLabelMode = 'none' | 'net_sum' | 'separate';
 
 export interface LabelsSettings {
   barLabelStyle: BarLabelStyle;
   showDataPointLabels: boolean;
   dataPointFontSize: number;
+  dataPointFontFamily: string;
+  dataPointFontWeight: 'normal' | 'bold';
+  dataPointColorMode: DataPointLabelColorMode;
   dataPointColor: string;
   dataPointPosition: DataPointLabelPosition;
+  dataPointCustomPadding: boolean;
+  dataPointPaddingTop: number;
+  dataPointPaddingRight: number;
+  dataPointPaddingBottom: number;
+  dataPointPaddingLeft: number;
   stackLabelMode: StackLabelMode;
 }
 
@@ -73,11 +82,27 @@ export type YAxisPosition = 'left' | 'right' | 'hidden';
 export type ScaleType = 'linear' | 'log';
 export type AxisTitleType = 'auto' | 'custom';
 export type TickPosition = 'default' | 'left' | 'right';
+export type TicksToShowMode = 'auto' | 'number';
+export type TickMarkPosition = 'outside' | 'inside' | 'cross';
 
 export interface AxisStyling {
   fontFamily: string;
   fontSize: number;
   fontWeight: 'normal' | 'bold';
+  color: string;
+}
+
+export interface TickMarksSettings {
+  show: boolean;
+  position: TickMarkPosition;
+  length: number;
+  width: number;
+  color: string;
+}
+
+export interface AxisLineSettings {
+  show: boolean;
+  width: number;
   color: string;
 }
 
@@ -94,6 +119,12 @@ export interface XAxisSettings {
   tickPosition: TickPosition;
   tickStyling: AxisStyling;
   showTickStyling: boolean;
+  tickPadding: number;
+  tickAngle: number;
+  ticksToShowMode: TicksToShowMode;
+  ticksToShowNumber: number;
+  tickMarks: TickMarksSettings;
+  axisLine: AxisLineSettings;
   gridlines: boolean;
   gridlineStyling: { color: string; width: number; dashArray: number };
   showGridlineStyling: boolean;

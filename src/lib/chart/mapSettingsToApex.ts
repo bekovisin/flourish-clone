@@ -51,6 +51,17 @@ function formatNumber(value: number, settings: ChartSettings['numberFormatting']
   return `${settings.prefix}${str}${settings.suffix}`;
 }
 
+// Helper: determine contrast color (black or white) for a given background
+function getContrastColor(hexColor: string): string {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  // YIQ formula for perceived brightness
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? '#000000' : '#ffffff';
+}
+
 export function mapSettingsToApexOptions(
   settings: ChartSettings,
   data: DataRow[],
@@ -63,13 +74,39 @@ export function mapSettingsToApexOptions(
   const categories = buildCategories(data, mapping);
   const colors = resolveColors(settings.colors, seriesNames);
 
+  // Flip axis: in ApexCharts, reversed reverses the axis direction
+  const flipAxis = settings.xAxis.flipAxis;
+
+  // Data label position mapping: left/center/right
+  const labelPos = settings.labels.dataPointPosition;
+  const apexDataLabelPos = labelPos === 'center' ? 'center' : 'top';
+
+  // Data label colors: auto = contrast-based, custom = user-specified
+  const dataLabelColors = settings.labels.dataPointColorMode === 'auto'
+    ? colors.map((c) => getContrastColor(c))
+    : [settings.labels.dataPointColor];
+
+  // Data label offset for left/right positioning
+  const dataLabelOffsetX = (() => {
+    if (labelPos === 'left') return isHorizontal ? -10 : -10;
+    if (labelPos === 'right') return isHorizontal ? 10 : 10;
+    return 0;
+  })();
+
+  // Tick angle (ApexCharts uses negative rotation, 0 = horizontal)
+  const tickRotation = settings.xAxis.tickAngle;
+
+  // Ticks to show
+  const tickAmount = settings.xAxis.ticksToShowMode === 'number'
+    ? settings.xAxis.ticksToShowNumber
+    : undefined;
+
   const options: ApexCharts.ApexOptions = {
     chart: {
       type: 'bar',
       stacked: isStacked,
       stackType: is100Percent ? '100%' : undefined,
-      height: settings.chartType.heightMode === 'auto' ? '100%' : settings.chartType.standardHeight,
-      background: settings.layout.backgroundColor,
+      background: 'transparent',
       animations: {
         enabled: settings.animations.enabled,
         speed: settings.animations.duration,
@@ -93,7 +130,7 @@ export function mapSettingsToApexOptions(
         borderRadius: 0,
         borderRadiusApplication: 'end',
         dataLabels: {
-          position: settings.labels.dataPointPosition === 'center' ? 'center' : 'top',
+          position: apexDataLabelPos,
         },
       },
     },
@@ -116,26 +153,39 @@ export function mapSettingsToApexOptions(
       enabled: settings.labels.showDataPointLabels,
       style: {
         fontSize: `${settings.labels.dataPointFontSize}px`,
-        colors: [settings.labels.dataPointColor],
+        fontFamily: settings.labels.dataPointFontFamily,
+        fontWeight: settings.labels.dataPointFontWeight === 'bold' ? 700 : 400,
+        colors: dataLabelColors,
       },
+      offsetX: dataLabelOffsetX + (settings.labels.dataPointCustomPadding ? settings.labels.dataPointPaddingLeft - settings.labels.dataPointPaddingRight : 0),
+      offsetY: settings.labels.dataPointCustomPadding ? settings.labels.dataPointPaddingTop - settings.labels.dataPointPaddingBottom : 0,
       formatter: (val: number) => formatNumber(val, settings.numberFormatting),
     },
     xaxis: {
       categories,
       position: (() => {
         const pos = settings.xAxis.position;
-        if (pos === 'hidden') return 'bottom'; // hidden handled by show:false below
+        if (pos === 'hidden') return 'bottom';
         if (pos === 'top' || pos === 'float_up') return 'top';
-        return 'bottom'; // 'bottom', 'float_down'
+        return 'bottom';
       })(),
+      tickAmount,
       axisBorder: {
-        show: settings.xAxis.position !== 'hidden',
+        show: settings.xAxis.position !== 'hidden' && settings.xAxis.axisLine.show,
+        color: settings.xAxis.axisLine.color,
+        height: settings.xAxis.axisLine.width,
       },
       axisTicks: {
-        show: settings.xAxis.position !== 'hidden',
+        show: settings.xAxis.position !== 'hidden' && settings.xAxis.tickMarks.show,
+        color: settings.xAxis.tickMarks.color,
+        height: settings.xAxis.tickMarks.length,
+        borderType: 'solid',
       },
       labels: {
         show: settings.xAxis.position !== 'hidden',
+        rotate: tickRotation,
+        rotateAlways: tickRotation !== 0,
+        offsetY: settings.xAxis.tickPadding,
         style: {
           fontFamily: settings.xAxis.tickStyling.fontFamily,
           fontSize: `${settings.xAxis.tickStyling.fontSize}px`,
@@ -164,6 +214,7 @@ export function mapSettingsToApexOptions(
     yaxis: {
       show: settings.yAxis.position !== 'hidden',
       opposite: settings.yAxis.position === 'right',
+      reversed: flipAxis,
       logarithmic: settings.yAxis.scaleType === 'log',
       labels: {
         show: settings.yAxis.position !== 'hidden',
@@ -204,10 +255,10 @@ export function mapSettingsToApexOptions(
         },
       },
       padding: {
-        top: settings.layout.paddingTop + 10,
-        right: settings.layout.paddingRight + 10,
-        bottom: settings.layout.paddingBottom + 10,
-        left: settings.layout.paddingLeft + 10,
+        top: 10,
+        right: 10,
+        bottom: 10,
+        left: 10,
       },
     },
     legend: {
@@ -237,8 +288,6 @@ export function mapSettingsToApexOptions(
         formatter: (val: number) => formatNumber(val, settings.numberFormatting),
       },
     },
-    // Title and subtitle are rendered in ChartPreview component directly
-    // so we don't set them here to avoid ApexCharts offsetY calculation issues
   };
 
   // Add annotations - only valid ones with text and coordinates
@@ -292,7 +341,6 @@ export function buildChartData(
 
   // Stack sort
   if (settings.chartType.stackSortMode !== 'normal') {
-    // Sort each stack's series order
     const sortAsc = settings.chartType.stackSortMode === 'ascending';
     series.sort((a, b) => {
       const sumA = (a.data as number[]).reduce((s, v) => s + (v || 0), 0);

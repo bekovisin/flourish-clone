@@ -13,7 +13,13 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import type { BarLabelStyle, DataPointLabelPosition, StackLabelMode } from '@/types/chart';
+import type {
+  BarLabelStyle,
+  DataPointLabelPosition,
+  DataPointLabelColorMode,
+  StackLabelMode,
+  LabelsSettings,
+} from '@/types/chart';
 
 function SubHeader({ children }: { children: React.ReactNode }) {
   return (
@@ -25,11 +31,22 @@ function SubHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
+const fontFamilyOptions = [
+  'Inter, sans-serif',
+  'Arial',
+  'Helvetica',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+  'system-ui',
+];
+
 export function LabelsSection() {
   const settings = useEditorStore((s) => s.settings.labels);
   const updateSettings = useEditorStore((s) => s.updateSettings);
 
-  const update = (updates: Partial<typeof settings>) => {
+  const update = (updates: Partial<LabelsSettings>) => {
     updateSettings('labels', updates);
   };
 
@@ -65,22 +82,6 @@ export function LabelsSection() {
 
       {settings.showDataPointLabels && (
         <div className="space-y-3 pl-2 border-l-2 border-gray-100">
-          <NumberInput
-            label="Font size"
-            value={settings.dataPointFontSize}
-            onChange={(v) => update({ dataPointFontSize: v })}
-            min={6}
-            max={48}
-            step={1}
-            suffix="px"
-          />
-
-          <ColorPicker
-            label="Color"
-            value={settings.dataPointColor}
-            onChange={(color) => update({ dataPointColor: color })}
-          />
-
           <SettingRow label="Position">
             <Select
               value={settings.dataPointPosition}
@@ -92,12 +93,126 @@ export function LabelsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="inside" className="text-xs">Inside</SelectItem>
-                <SelectItem value="outside" className="text-xs">Outside</SelectItem>
+                <SelectItem value="left" className="text-xs">Left</SelectItem>
                 <SelectItem value="center" className="text-xs">Center</SelectItem>
+                <SelectItem value="right" className="text-xs">Right</SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
+
+          <SettingRow label="Custom padding" variant="inline">
+            <Switch
+              checked={settings.dataPointCustomPadding}
+              onCheckedChange={(checked) => update({ dataPointCustomPadding: checked })}
+            />
+          </SettingRow>
+
+          {settings.dataPointCustomPadding && (
+            <div className="space-y-2 pl-2 border-l-2 border-gray-100">
+              <NumberInput
+                label="Top"
+                value={settings.dataPointPaddingTop}
+                onChange={(v) => update({ dataPointPaddingTop: v })}
+                min={-50}
+                max={50}
+                step={1}
+                suffix="px"
+              />
+              <NumberInput
+                label="Right"
+                value={settings.dataPointPaddingRight}
+                onChange={(v) => update({ dataPointPaddingRight: v })}
+                min={-50}
+                max={50}
+                step={1}
+                suffix="px"
+              />
+              <NumberInput
+                label="Bottom"
+                value={settings.dataPointPaddingBottom}
+                onChange={(v) => update({ dataPointPaddingBottom: v })}
+                min={-50}
+                max={50}
+                step={1}
+                suffix="px"
+              />
+              <NumberInput
+                label="Left"
+                value={settings.dataPointPaddingLeft}
+                onChange={(v) => update({ dataPointPaddingLeft: v })}
+                min={-50}
+                max={50}
+                step={1}
+                suffix="px"
+              />
+            </div>
+          )}
+
+          <SettingRow label="Font family">
+            <Select
+              value={settings.dataPointFontFamily}
+              onValueChange={(v) => update({ dataPointFontFamily: v })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fontFamilyOptions.map((font) => (
+                  <SelectItem key={font} value={font} className="text-xs">
+                    {font}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <NumberInput
+            label="Font size"
+            value={settings.dataPointFontSize}
+            onChange={(v) => update({ dataPointFontSize: v })}
+            min={6}
+            max={48}
+            step={1}
+            suffix="px"
+          />
+
+          <SettingRow label="Font weight">
+            <Select
+              value={settings.dataPointFontWeight}
+              onValueChange={(v) => update({ dataPointFontWeight: v as 'normal' | 'bold' })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <SettingRow label="Color mode">
+            <Select
+              value={settings.dataPointColorMode}
+              onValueChange={(v) => update({ dataPointColorMode: v as DataPointLabelColorMode })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto" className="text-xs">Auto (contrast)</SelectItem>
+                <SelectItem value="custom" className="text-xs">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          {settings.dataPointColorMode === 'custom' && (
+            <ColorPicker
+              label="Color"
+              value={settings.dataPointColor}
+              onChange={(color) => update({ dataPointColor: color })}
+            />
+          )}
         </div>
       )}
 
