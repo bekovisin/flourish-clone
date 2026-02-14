@@ -56,6 +56,45 @@ interface EditorState {
   }) => void;
 }
 
+// Deep merge saved settings with defaults so new fields are always present (2 levels deep)
+function deepMerge(defaults: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...defaults };
+  for (const key of Object.keys(saved)) {
+    const savedVal = saved[key];
+    const defaultVal = defaults[key];
+    if (
+      savedVal !== null && savedVal !== undefined &&
+      typeof savedVal === 'object' && !Array.isArray(savedVal) &&
+      typeof defaultVal === 'object' && defaultVal !== null && !Array.isArray(defaultVal)
+    ) {
+      result[key] = { ...(defaultVal as Record<string, unknown>), ...(savedVal as Record<string, unknown>) };
+    } else if (savedVal !== undefined) {
+      result[key] = savedVal;
+    }
+  }
+  return result;
+}
+
+function mergeSettings(saved: Partial<ChartSettings>): ChartSettings {
+  const merged = {} as Record<string, unknown>;
+  const defaults = defaultChartSettings as unknown as Record<string, unknown>;
+  const savedRec = saved as unknown as Record<string, unknown>;
+  for (const key of Object.keys(defaults)) {
+    const defaultVal = defaults[key];
+    const savedVal = savedRec[key];
+    if (savedVal !== undefined && typeof savedVal === 'object' && savedVal !== null && !Array.isArray(savedVal) &&
+        typeof defaultVal === 'object' && defaultVal !== null && !Array.isArray(defaultVal)) {
+      // Section-level merge (e.g. xAxis, labels) — also merges nested objects (e.g. tickMarks, axisLine)
+      merged[key] = deepMerge(defaultVal as Record<string, unknown>, savedVal as Record<string, unknown>);
+    } else if (savedVal !== undefined) {
+      merged[key] = savedVal;
+    } else {
+      merged[key] = defaultVal;
+    }
+  }
+  return merged as unknown as ChartSettings;
+}
+
 export const useEditorStore = create<EditorState>((set) => ({
   visualizationId: null,
   visualizationName: 'Untitled visualization',
@@ -119,7 +158,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       visualizationName: viz.name,
       chartType: viz.chartType,
       data: viz.data,
-      settings: viz.settings,
+      settings: mergeSettings(viz.settings),
       columnMapping: viz.columnMapping,
       isDirty: false,
       lastSavedAt: new Date(),
