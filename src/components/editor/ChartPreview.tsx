@@ -19,7 +19,7 @@ export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab } = useEditorStore();
 
-  const { series, options, autoHeight, categories, isAboveBars } = useMemo(
+  const { series, options, autoHeight, isAboveBars, categories } = useMemo(
     () => buildChartData(data, columnMapping, settings),
     [data, columnMapping, settings]
   );
@@ -27,8 +27,9 @@ export function ChartPreview() {
   // Force ApexCharts remount when formatter-dependent settings change
   const chartKey = useMemo(() => {
     const nf = settings.numberFormatting;
-    return `${nf.decimalPlaces}-${nf.thousandsSeparator}-${nf.decimalSeparator}-${nf.prefix}-${nf.suffix}`;
-  }, [settings.numberFormatting]);
+    const ab = isAboveBars ? 'ab' : 'ax';
+    return `${nf.decimalPlaces}-${nf.thousandsSeparator}-${nf.decimalSeparator}-${nf.prefix}-${nf.suffix}-${ab}`;
+  }, [settings.numberFormatting, isAboveBars]);
 
   const isAutoHeight = settings.chartType.heightMode === 'auto';
   const hasFixedHeight = !isAutoHeight && previewDevice === 'custom';
@@ -41,10 +42,7 @@ export function ChartPreview() {
 
   if (activeTab !== 'preview') return null;
 
-  // "Above bars" label rendering
-  const aboveBarsLabels = isAboveBars ? categories : [];
   const yAxisStyle = settings.yAxis.tickStyling;
-  const barSlotHeight = settings.bars.barHeight + settings.bars.spacingMain;
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
@@ -146,38 +144,94 @@ export function ChartPreview() {
               overflow: 'hidden',
             }}
           >
-            {/* "Above bars" labels rendered as HTML above the chart */}
-            {aboveBarsLabels.length > 0 && (
-              <div className="above-bars-labels" style={{ position: 'relative' }}>
-                {aboveBarsLabels.map((cat, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      height: barSlotHeight,
-                      display: 'flex',
-                      alignItems: 'center',
-                      paddingLeft: 4,
-                      fontFamily: yAxisStyle.fontFamily,
-                      fontSize: `${yAxisStyle.fontSize}px`,
-                      fontWeight: yAxisStyle.fontWeight === 'bold' ? 700 : 400,
-                      color: yAxisStyle.color,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {cat}
-                  </div>
-                ))}
-              </div>
-            )}
             <div style={{ width: '100%', height: hasFixedHeight ? '100%' : undefined }}>
               {series.length > 0 ? (
-                <ReactApexChart
-                  key={chartKey}
-                  options={options}
-                  series={series}
-                  type="bar"
-                  height={chartHeight}
-                />
+                isAboveBars ? (
+                  <div>
+                    {categories.map((cat, i) => {
+                      // Build per-category series (single bar per series)
+                      const catSeries = series.map((s) => ({
+                        name: s.name,
+                        data: [(s.data as number[])[i] || 0],
+                      }));
+                      // Clone options for single-category chart
+                      const isLast = i === categories.length - 1;
+                      const catXaxis = isLast
+                        ? { ...options.xaxis, categories: [cat] }
+                        : {
+                            ...options.xaxis,
+                            categories: [cat],
+                            labels: { ...options.xaxis?.labels, show: false },
+                            axisBorder: { show: false },
+                            axisTicks: { show: false },
+                          };
+                      const catOptions: ApexCharts.ApexOptions = {
+                        ...options,
+                        xaxis: catXaxis,
+                        legend: { ...options.legend, show: false },
+                        grid: {
+                          ...options.grid,
+                          padding: { top: 0, right: 10, bottom: 0, left: 0 },
+                          xaxis: { lines: { show: isLast && (options.grid?.xaxis?.lines?.show || false) } },
+                        },
+                        chart: {
+                          ...options.chart,
+                          animations: { enabled: false },
+                        },
+                      };
+                      const barH = settings.bars.barHeight;
+                      const xAxisH = i === categories.length - 1 ? 30 : 0;
+                      return (
+                        <div key={`${chartKey}-${i}`}>
+                          <div
+                            style={{
+                              fontFamily: yAxisStyle.fontFamily,
+                              fontSize: `${yAxisStyle.fontSize}px`,
+                              fontWeight: yAxisStyle.fontWeight === 'bold' ? 700 : 400,
+                              color: yAxisStyle.color,
+                              padding: '4px 0 2px 4px',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {cat}
+                          </div>
+                          <ReactApexChart
+                            options={catOptions}
+                            series={catSeries}
+                            type="bar"
+                            height={barH + xAxisH + 8}
+                          />
+                        </div>
+                      );
+                    })}
+                    {/* Show legend at bottom */}
+                    {settings.legend.show && (
+                      <div style={{ marginTop: settings.legend.marginTop || 0 }}>
+                        <ReactApexChart
+                          options={{
+                            ...options,
+                            chart: { ...options.chart, height: 40, animations: { enabled: false } },
+                            xaxis: { ...options.xaxis, labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+                            yaxis: { show: false, labels: { show: false } },
+                            grid: { show: false, padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+                            legend: { ...options.legend, show: true },
+                          }}
+                          series={series.map((s) => ({ ...s, data: [0] }))}
+                          type="bar"
+                          height={50}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <ReactApexChart
+                    key={chartKey}
+                    options={options}
+                    series={series}
+                    type="bar"
+                    height={chartHeight}
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
                   <div className="text-center">
@@ -249,16 +303,6 @@ export function ChartPreview() {
           )}
         </div>
       </div>
-
-      {/* Global CSS for Y axis label truncation */}
-      <style jsx global>{`
-        .apexcharts-yaxis-label-truncate tspan {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      `}</style>
     </div>
   );
 }

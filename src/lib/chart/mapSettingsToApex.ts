@@ -51,13 +51,11 @@ function formatNumber(value: number, settings: ChartSettings['numberFormatting']
   return `${settings.prefix}${str}${settings.suffix}`;
 }
 
-// Helper: determine contrast color (black or white) for a given background
 function getContrastColor(hexColor: string): string {
   const hex = hexColor.replace('#', '');
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  // YIQ formula for perceived brightness
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
   return yiq >= 128 ? '#000000' : '#ffffff';
 }
@@ -75,12 +73,8 @@ export function mapSettingsToApexOptions(
   const colors = resolveColors(settings.colors, seriesNames);
   const isAboveBars = settings.labels.barLabelStyle === 'above_bars';
 
-  // Flip axis: in ApexCharts, reversed reverses the axis direction
   const flipAxis = settings.xAxis.flipAxis;
 
-  // Data label position mapping: left/center/right → ApexCharts position
-  // For horizontal bars: 'bottom'=left edge, 'center'=middle, 'top'=right edge of segment
-  // For vertical bars: 'bottom'=bottom, 'center'=middle, 'top'=top of segment
   const labelPos = settings.labels.dataPointPosition;
   const apexDataLabelPos = (() => {
     if (labelPos === 'left') return 'bottom';
@@ -88,27 +82,26 @@ export function mapSettingsToApexOptions(
     return 'center';
   })() as 'top' | 'center' | 'bottom';
 
-  // Text anchor for alignment within position
   const dataLabelTextAnchor = (() => {
     if (labelPos === 'left') return 'start' as const;
     if (labelPos === 'right') return 'end' as const;
     return 'middle' as const;
   })();
 
-  // Data label colors: auto = contrast-based, custom = per-series user-specified
   const dataLabelColors = settings.labels.dataPointColorMode === 'auto'
     ? colors.map((c) => getContrastColor(c))
     : seriesNames.map((name) =>
         settings.labels.dataPointSeriesColors[name] || settings.labels.dataPointColor
       );
 
-  // Tick angle (ApexCharts uses negative rotation, 0 = horizontal)
   const tickRotation = settings.xAxis.tickAngle;
 
-  // Ticks to show
   const tickAmount = settings.xAxis.ticksToShowMode === 'number'
     ? settings.xAxis.ticksToShowNumber
     : undefined;
+
+  // Y axis: hidden when position=hidden OR in above_bars mode for horizontal bars
+  const yAxisHidden = settings.yAxis.position === 'hidden' || (isHorizontal && isAboveBars);
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -232,12 +225,12 @@ export function mapSettingsToApexOptions(
       max: settings.xAxis.max ? parseFloat(settings.xAxis.max) : undefined,
     },
     yaxis: {
-      show: settings.yAxis.position !== 'hidden' && !(isHorizontal && isAboveBars),
+      show: !yAxisHidden,
       opposite: settings.yAxis.position === 'right',
       reversed: flipAxis,
       logarithmic: settings.yAxis.scaleType === 'log',
       labels: {
-        show: settings.yAxis.position !== 'hidden' && !(isHorizontal && isAboveBars),
+        show: !yAxisHidden,
         maxWidth: isHorizontal
           ? (settings.yAxis.spaceMode === 'fixed' ? settings.yAxis.spaceModeValue : 300)
           : undefined,
@@ -246,7 +239,6 @@ export function mapSettingsToApexOptions(
           fontSize: `${settings.yAxis.tickStyling.fontSize}px`,
           fontWeight: settings.yAxis.tickStyling.fontWeight === 'bold' ? 700 : 400,
           colors: settings.yAxis.tickStyling.color,
-          cssClass: isHorizontal && settings.yAxis.spaceMode === 'fixed' ? 'apexcharts-yaxis-label-truncate' : '',
         },
         offsetX: isHorizontal ? -(settings.yAxis.tickPadding || 0) : 0,
         formatter: !isHorizontal
@@ -280,10 +272,10 @@ export function mapSettingsToApexOptions(
         },
       },
       padding: {
-        top: 10,
+        top: isHorizontal && isAboveBars ? 0 : 10,
         right: 10,
         bottom: 10,
-        left: 10,
+        left: isHorizontal && isAboveBars ? 0 : 10,
       },
     },
     legend: {
@@ -342,24 +334,16 @@ export function mapSettingsToApexOptions(
   return options;
 }
 
-export interface ChartBuildResult {
-  series: ApexAxisChartSeries;
-  options: ApexCharts.ApexOptions;
-  autoHeight: number;
-  categories: string[];
-  isAboveBars: boolean;
-}
-
 export function buildChartData(
   data: DataRow[],
   mapping: ColumnMapping,
   settings: ChartSettings
-): ChartBuildResult {
+): { series: ApexAxisChartSeries; options: ApexCharts.ApexOptions; autoHeight: number; isAboveBars: boolean; categories: string[] } {
   const series = buildSeries(data, mapping);
   const options = mapSettingsToApexOptions(settings, data, mapping);
-  const categories = buildCategories(data, mapping);
   const isHorizontal = settings.chartType.chartType.startsWith('bar_');
-  const isAboveBars = isHorizontal && settings.labels.barLabelStyle === 'above_bars';
+  const isAboveBars = settings.labels.barLabelStyle === 'above_bars' && isHorizontal;
+  const categories = buildCategories(data, mapping);
 
   // Sort data if needed
   if (settings.chartType.sortMode === 'value' && series.length > 0) {
@@ -390,9 +374,8 @@ export function buildChartData(
   const numCategories = data.length || 1;
   const barHeightPx = settings.bars.barHeight;
   const spacingPx = settings.bars.spacingMain;
-  // Total chart area: each category slot = barHeight + spacing, plus axis/legend/header overhead
-  const legendHeight = settings.legend.show ? 40 : 0;
-  const autoHeight = Math.max(150, numCategories * (barHeightPx + spacingPx) + 60 + legendHeight);
+  const labelRowHeight = isAboveBars ? settings.yAxis.tickStyling.fontSize + 8 : 0;
+  const autoHeight = Math.max(150, numCategories * (barHeightPx + spacingPx + labelRowHeight) + 80);
 
-  return { series, options, autoHeight, categories, isAboveBars };
+  return { series, options, autoHeight, isAboveBars, categories };
 }
