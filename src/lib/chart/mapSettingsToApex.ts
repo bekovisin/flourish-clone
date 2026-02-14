@@ -232,7 +232,7 @@ export function mapSettingsToApexOptions(
       max: settings.xAxis.max ? parseFloat(settings.xAxis.max) : undefined,
     },
     yaxis: {
-      show: settings.yAxis.position !== 'hidden',
+      show: settings.yAxis.position !== 'hidden' && !(isHorizontal && isAboveBars),
       opposite: settings.yAxis.position === 'right',
       reversed: flipAxis,
       logarithmic: settings.yAxis.scaleType === 'log',
@@ -246,6 +246,7 @@ export function mapSettingsToApexOptions(
           fontSize: `${settings.yAxis.tickStyling.fontSize}px`,
           fontWeight: settings.yAxis.tickStyling.fontWeight === 'bold' ? 700 : 400,
           colors: settings.yAxis.tickStyling.color,
+          cssClass: isHorizontal && settings.yAxis.spaceMode === 'fixed' ? 'apexcharts-yaxis-label-truncate' : '',
         },
         offsetX: isHorizontal ? -(settings.yAxis.tickPadding || 0) : 0,
         formatter: !isHorizontal
@@ -286,11 +287,11 @@ export function mapSettingsToApexOptions(
       },
     },
     legend: {
-      show: true,
+      show: settings.legend.show,
       position: settings.legend.orientation === 'vertical' ? 'right' : 'bottom',
       horizontalAlign: settings.legend.alignment === 'inline' ? 'center' : settings.legend.alignment as 'left' | 'center' | 'right',
       fontSize: `${settings.legend.size}px`,
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
       fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
       labels: {
         colors: settings.legend.color,
@@ -304,6 +305,7 @@ export function mapSettingsToApexOptions(
         horizontal: settings.legend.swatchPadding,
         vertical: 4,
       },
+      offsetY: settings.legend.marginTop || 0,
     },
     tooltip: {
       enabled: settings.popupsPanels.showPopup,
@@ -337,39 +339,27 @@ export function mapSettingsToApexOptions(
     };
   }
 
-  // "Above bars" label style: add category names as yaxis annotations
-  if (isHorizontal && isAboveBars && categories.length > 0) {
-    if (!options.annotations) options.annotations = {};
-    options.annotations.yaxis = categories.map((cat) => ({
-      y: cat,
-      borderColor: 'transparent',
-      label: {
-        text: cat,
-        position: 'front',
-        offsetX: -10,
-        offsetY: 0,
-        style: {
-          fontSize: `${settings.yAxis.tickStyling.fontSize}px`,
-          fontFamily: settings.yAxis.tickStyling.fontFamily,
-          fontWeight: settings.yAxis.tickStyling.fontWeight === 'bold' ? '700' : '400',
-          color: settings.yAxis.tickStyling.color,
-          background: 'transparent',
-          padding: { left: 0, right: 0, top: 0, bottom: 0 },
-        },
-      },
-    }));
-  }
-
   return options;
+}
+
+export interface ChartBuildResult {
+  series: ApexAxisChartSeries;
+  options: ApexCharts.ApexOptions;
+  autoHeight: number;
+  categories: string[];
+  isAboveBars: boolean;
 }
 
 export function buildChartData(
   data: DataRow[],
   mapping: ColumnMapping,
   settings: ChartSettings
-): { series: ApexAxisChartSeries; options: ApexCharts.ApexOptions; autoHeight: number } {
+): ChartBuildResult {
   const series = buildSeries(data, mapping);
   const options = mapSettingsToApexOptions(settings, data, mapping);
+  const categories = buildCategories(data, mapping);
+  const isHorizontal = settings.chartType.chartType.startsWith('bar_');
+  const isAboveBars = isHorizontal && settings.labels.barLabelStyle === 'above_bars';
 
   // Sort data if needed
   if (settings.chartType.sortMode === 'value' && series.length > 0) {
@@ -400,8 +390,9 @@ export function buildChartData(
   const numCategories = data.length || 1;
   const barHeightPx = settings.bars.barHeight;
   const spacingPx = settings.bars.spacingMain;
-  // Total chart area: each category slot = barHeight + spacing, plus axis/legend overhead
-  const autoHeight = Math.max(150, numCategories * (barHeightPx + spacingPx) + 80);
+  // Total chart area: each category slot = barHeight + spacing, plus axis/legend/header overhead
+  const legendHeight = settings.legend.show ? 40 : 0;
+  const autoHeight = Math.max(150, numCategories * (barHeightPx + spacingPx) + 60 + legendHeight);
 
-  return { series, options, autoHeight };
+  return { series, options, autoHeight, categories, isAboveBars };
 }

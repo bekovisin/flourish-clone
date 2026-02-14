@@ -179,12 +179,15 @@ export type LegendOrientation = 'horizontal' | 'vertical';
 export type DataColorsHeader = 'auto' | 'custom' | 'off';
 
 export interface LegendSettings {
+  show: boolean;
   clickToFilter: FilterMode;
   alignment: LegendAlignment;
   titleWeight: 'normal' | 'bold';
   textWeight: 'normal' | 'bold';
+  fontFamily: string;
   color: string;
   size: number;
+  marginTop: number;
   titleText: string;
   swatchWidth: number;
   swatchHeight: number;

@@ -17,6 +17,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition, YAxisSpaceMode } from '@/types/chart';
 
+const fontFamilyOptions = [
+  'Inter, sans-serif',
+  'Arial',
+  'Helvetica',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+  'system-ui',
+];
+
 export function YAxisSection() {
   const settings = useEditorStore((s) => s.settings.yAxis);
   const updateSettings = useEditorStore((s) => s.updateSettings);
@@ -229,72 +240,78 @@ export function YAxisSection() {
           onChange={(v) => update({ spaceModeValue: v })}
           min={30}
           max={400}
-          step={5}
+          step={1}
           suffix="px"
         />
       )}
 
-      <SettingRow label="Show styling" variant="inline">
-        <Switch
-          checked={settings.showTickStyling}
-          onCheckedChange={(v) => update({ showTickStyling: v })}
-        />
+      {/* Tick styling - Color, Size, Weight directly visible */}
+      <ColorPicker
+        label="Color"
+        value={settings.tickStyling.color}
+        onChange={(v) =>
+          update({
+            tickStyling: { ...settings.tickStyling, color: v },
+          })
+        }
+      />
+
+      <NumberInput
+        label="Size"
+        value={settings.tickStyling.fontSize}
+        onChange={(v) =>
+          update({
+            tickStyling: { ...settings.tickStyling, fontSize: v },
+          })
+        }
+        min={6}
+        max={48}
+        suffix="px"
+      />
+
+      <SettingRow label="Weight">
+        <div className="flex rounded-md border border-gray-200 overflow-hidden">
+          {(['normal', 'bold'] as const).map((w) => (
+            <button
+              key={w}
+              onClick={() =>
+                update({
+                  tickStyling: { ...settings.tickStyling, fontWeight: w },
+                })
+              }
+              className={`px-3 py-1.5 text-xs transition-colors ${
+                settings.tickStyling.fontWeight === w
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              } ${w === 'bold' ? 'border-l border-gray-200' : ''}`}
+            >
+              {w === 'normal' ? 'Normal' : 'Bold'}
+            </button>
+          ))}
+        </div>
       </SettingRow>
 
-      {settings.showTickStyling && (
-        <>
-          <SettingRow label="Font family">
-            <Input
-              value={settings.tickStyling.fontFamily}
-              onChange={(e) =>
-                update({
-                  tickStyling: { ...settings.tickStyling, fontFamily: e.target.value },
-                })
-              }
-              className="h-8 text-xs w-full"
-            />
-          </SettingRow>
-          <NumberInput
-            label="Font size"
-            value={settings.tickStyling.fontSize}
-            onChange={(v) =>
-              update({
-                tickStyling: { ...settings.tickStyling, fontSize: v },
-              })
-            }
-            min={6}
-            max={48}
-            suffix="px"
-          />
-          <SettingRow label="Font weight">
-            <Select
-              value={settings.tickStyling.fontWeight}
-              onValueChange={(v: 'normal' | 'bold') =>
-                update({
-                  tickStyling: { ...settings.tickStyling, fontWeight: v },
-                })
-              }
-            >
-              <SelectTrigger className="h-8 text-xs w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="bold">Bold</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-          <ColorPicker
-            label="Color"
-            value={settings.tickStyling.color}
-            onChange={(v) =>
-              update({
-                tickStyling: { ...settings.tickStyling, color: v },
-              })
-            }
-          />
-        </>
-      )}
+      <SettingRow label="Font family">
+        <Select
+          value={settings.tickStyling.fontFamily}
+          onValueChange={(v) =>
+            update({
+              tickStyling: { ...settings.tickStyling, fontFamily: v },
+            })
+          }
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {fontFamilyOptions.map((font) => (
+              <SelectItem key={font} value={font} className="text-xs">
+                {font}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </SettingRow>
 
       {/* ---- GRIDLINES ---- */}
       <div className="pt-2 border-t border-gray-100">

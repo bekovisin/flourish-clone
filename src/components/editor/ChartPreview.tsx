@@ -19,13 +19,12 @@ export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab } = useEditorStore();
 
-  const { series, options, autoHeight } = useMemo(
+  const { series, options, autoHeight, categories, isAboveBars } = useMemo(
     () => buildChartData(data, columnMapping, settings),
     [data, columnMapping, settings]
   );
 
   // Force ApexCharts remount when formatter-dependent settings change
-  // (ApexCharts caches formatter closures and won't re-render otherwise)
   const chartKey = useMemo(() => {
     const nf = settings.numberFormatting;
     return `${nf.decimalPlaces}-${nf.thousandsSeparator}-${nf.decimalSeparator}-${nf.prefix}-${nf.suffix}`;
@@ -34,10 +33,6 @@ export function ChartPreview() {
   const isAutoHeight = settings.chartType.heightMode === 'auto';
   const hasFixedHeight = !isAutoHeight && previewDevice === 'custom';
 
-  // Chart height logic:
-  // - Auto mode: chart height driven by bar settings (auto-computed from barHeight + spacing)
-  // - Standard mode + custom preview: canvas has fixed height, chart fills it (100%)
-  // - Standard mode + other presets: chart uses the standardHeight value directly
   const chartHeight = (() => {
     if (isAutoHeight) return autoHeight;
     if (previewDevice === 'custom') return '100%';
@@ -45,6 +40,11 @@ export function ChartPreview() {
   })();
 
   if (activeTab !== 'preview') return null;
+
+  // "Above bars" label rendering
+  const aboveBarsLabels = isAboveBars ? categories : [];
+  const yAxisStyle = settings.yAxis.tickStyling;
+  const barSlotHeight = settings.bars.barHeight + settings.bars.spacingMain;
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
@@ -61,7 +61,7 @@ export function ChartPreview() {
           className="bg-white rounded-lg shadow-sm border transition-all duration-300"
           style={{
             width: previewDevice === 'custom' ? `${customPreviewWidth}px` : deviceWidths[previewDevice],
-            height: hasFixedHeight ? `${settings.chartType.standardHeight}px` : undefined,
+            height: hasFixedHeight ? `${settings.chartType.standardHeight}px` : 'fit-content',
             maxWidth: settings.layout.maxWidth > 0 ? settings.layout.maxWidth : undefined,
             backgroundColor: settings.layout.backgroundColor,
             display: 'flex',
@@ -146,6 +146,29 @@ export function ChartPreview() {
               overflow: 'hidden',
             }}
           >
+            {/* "Above bars" labels rendered as HTML above the chart */}
+            {aboveBarsLabels.length > 0 && (
+              <div className="above-bars-labels" style={{ position: 'relative' }}>
+                {aboveBarsLabels.map((cat, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: barSlotHeight,
+                      display: 'flex',
+                      alignItems: 'center',
+                      paddingLeft: 4,
+                      fontFamily: yAxisStyle.fontFamily,
+                      fontSize: `${yAxisStyle.fontSize}px`,
+                      fontWeight: yAxisStyle.fontWeight === 'bold' ? 700 : 400,
+                      color: yAxisStyle.color,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {cat}
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ width: '100%', height: hasFixedHeight ? '100%' : undefined }}>
               {series.length > 0 ? (
                 <ReactApexChart
@@ -226,6 +249,16 @@ export function ChartPreview() {
           )}
         </div>
       </div>
+
+      {/* Global CSS for Y axis label truncation */}
+      <style jsx global>{`
+        .apexcharts-yaxis-label-truncate tspan {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      `}</style>
     </div>
   );
 }
