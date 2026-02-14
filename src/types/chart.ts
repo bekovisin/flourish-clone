@@ -67,6 +67,7 @@ export interface LabelsSettings {
   dataPointFontWeight: 'normal' | 'bold';
   dataPointColorMode: DataPointLabelColorMode;
   dataPointColor: string;
+  dataPointSeriesColors: Record<string, string>;
   dataPointPosition: DataPointLabelPosition;
   dataPointCustomPadding: boolean;
   dataPointPaddingTop: number;

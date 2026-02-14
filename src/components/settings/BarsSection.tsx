@@ -17,27 +17,31 @@ interface SliderWithInputProps {
   min: number;
   max: number;
   step: number;
+  suffix?: string;
 }
 
-function SliderWithInput({ label, value, onChange, min, max, step }: SliderWithInputProps) {
+function SliderWithInput({ label, value, onChange, min, max, step, suffix }: SliderWithInputProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-4">
         <Label className="text-xs text-gray-600 shrink-0">{label}</Label>
-        <Input
-          type="number"
-          value={value}
-          onChange={(e) => {
-            const num = parseFloat(e.target.value);
-            if (!isNaN(num)) {
-              onChange(Math.max(min, Math.min(max, num)));
-            }
-          }}
-          min={min}
-          max={max}
-          step={step}
-          className="h-7 text-xs w-full"
-        />
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => {
+              const num = parseFloat(e.target.value);
+              if (!isNaN(num)) {
+                onChange(Math.max(min, Math.min(max, num)));
+              }
+            }}
+            min={min}
+            max={max}
+            step={step}
+            className="h-7 text-xs w-20"
+          />
+          {suffix && <span className="text-xs text-gray-400">{suffix}</span>}
+        </div>
       </div>
       <Slider
         value={[value]}
@@ -60,34 +64,26 @@ export function BarsSection() {
 
   return (
     <AccordionSection id="bars" title="Bars">
-      {/* Bar Height */}
+      {/* Bar Height (px) */}
       <SliderWithInput
         label="Bar height"
         value={settings.barHeight}
         onChange={(v) => update({ barHeight: v })}
-        min={1}
-        max={10}
+        min={4}
+        max={80}
         step={1}
+        suffix="px"
       />
 
-      {/* Bar Opacity */}
-      <SliderWithInput
-        label="Bar opacity"
-        value={settings.barOpacity}
-        onChange={(v) => update({ barOpacity: v })}
-        min={0}
-        max={1}
-        step={0.05}
-      />
-
-      {/* Spacing (main) */}
+      {/* Spacing (main) - gap between bars in px */}
       <SliderWithInput
         label="Spacing (main)"
         value={settings.spacingMain}
         onChange={(v) => update({ spacingMain: v })}
         min={0}
-        max={1}
-        step={0.05}
+        max={60}
+        step={1}
+        suffix="px"
       />
 
       {/* Spacing (in stack) */}
@@ -95,6 +91,17 @@ export function BarsSection() {
         label="Spacing (in stack)"
         value={settings.spacingInStack}
         onChange={(v) => update({ spacingInStack: v })}
+        min={0}
+        max={10}
+        step={1}
+        suffix="px"
+      />
+
+      {/* Bar Opacity */}
+      <SliderWithInput
+        label="Bar opacity"
+        value={settings.barOpacity}
+        onChange={(v) => update({ barOpacity: v })}
         min={0}
         max={1}
         step={0.05}

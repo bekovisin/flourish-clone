@@ -94,10 +94,12 @@ export function mapSettingsToApexOptions(
     return 'middle' as const;
   })();
 
-  // Data label colors: auto = contrast-based, custom = user-specified
+  // Data label colors: auto = contrast-based, custom = per-series user-specified
   const dataLabelColors = settings.labels.dataPointColorMode === 'auto'
     ? colors.map((c) => getContrastColor(c))
-    : [settings.labels.dataPointColor];
+    : seriesNames.map((name) =>
+        settings.labels.dataPointSeriesColors[name] || settings.labels.dataPointColor
+      );
 
   // Tick angle (ApexCharts uses negative rotation, 0 = horizontal)
   const tickRotation = settings.xAxis.tickAngle;
@@ -131,8 +133,12 @@ export function mapSettingsToApexOptions(
     plotOptions: {
       bar: {
         horizontal: isHorizontal,
-        barHeight: `${Math.max(5, Math.min(100, Math.round(settings.bars.barHeight * 10 * (1 - settings.bars.spacingMain))))}%`,
-        columnWidth: `${Math.max(5, Math.min(100, Math.round(settings.bars.barHeight * 10 * (1 - settings.bars.spacingMain))))}%`,
+        barHeight: `${Math.max(5, Math.min(98, Math.round(
+          settings.bars.barHeight / (settings.bars.barHeight + settings.bars.spacingMain) * 100
+        )))}%`,
+        columnWidth: `${Math.max(5, Math.min(98, Math.round(
+          settings.bars.barHeight / (settings.bars.barHeight + settings.bars.spacingMain) * 100
+        )))}%`,
         borderRadius: 0,
         borderRadiusApplication: 'end',
         dataLabels: {
@@ -153,7 +159,7 @@ export function mapSettingsToApexOptions(
       : settings.bars.spacingInStack > 0
         ? {
             show: true,
-            width: Math.max(1, Math.round(settings.bars.spacingInStack * 8)),
+            width: settings.bars.spacingInStack,
             colors: [settings.layout.backgroundColor || '#ffffff'],
           }
         : {
@@ -333,7 +339,7 @@ export function buildChartData(
   data: DataRow[],
   mapping: ColumnMapping,
   settings: ChartSettings
-): { series: ApexAxisChartSeries; options: ApexCharts.ApexOptions } {
+): { series: ApexAxisChartSeries; options: ApexCharts.ApexOptions; autoHeight: number } {
   const series = buildSeries(data, mapping);
   const options = mapSettingsToApexOptions(settings, data, mapping);
 
@@ -362,5 +368,12 @@ export function buildChartData(
     });
   }
 
-  return { series, options };
+  // Compute auto height based on bar settings and number of categories
+  const numCategories = data.length || 1;
+  const barHeightPx = settings.bars.barHeight;
+  const spacingPx = settings.bars.spacingMain;
+  // Total chart area: each category slot = barHeight + spacing, plus axis/legend overhead
+  const autoHeight = Math.max(150, numCategories * (barHeightPx + spacingPx) + 80);
+
+  return { series, options, autoHeight };
 }

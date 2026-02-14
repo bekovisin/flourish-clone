@@ -44,6 +44,7 @@ const fontFamilyOptions = [
 
 export function LabelsSection() {
   const settings = useEditorStore((s) => s.settings.labels);
+  const seriesNames = useEditorStore((s) => s.columnMapping.values || []);
   const updateSettings = useEditorStore((s) => s.updateSettings);
 
   const update = (updates: Partial<LabelsSettings>) => {
@@ -207,11 +208,32 @@ export function LabelsSection() {
           </SettingRow>
 
           {settings.dataPointColorMode === 'custom' && (
-            <ColorPicker
-              label="Color"
-              value={settings.dataPointColor}
-              onChange={(color) => update({ dataPointColor: color })}
-            />
+            <div className="space-y-2">
+              <ColorPicker
+                label="Default color"
+                value={settings.dataPointColor}
+                onChange={(color) => update({ dataPointColor: color })}
+              />
+              {seriesNames.length > 0 && (
+                <div className="space-y-2 pl-2 border-l-2 border-gray-100">
+                  {seriesNames.map((name) => (
+                    <ColorPicker
+                      key={name}
+                      label={name}
+                      value={settings.dataPointSeriesColors?.[name] || settings.dataPointColor}
+                      onChange={(color) => {
+                        update({
+                          dataPointSeriesColors: {
+                            ...settings.dataPointSeriesColors,
+                            [name]: color,
+                          },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

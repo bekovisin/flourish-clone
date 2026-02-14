@@ -19,20 +19,23 @@ export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { settings, data, columnMapping, previewDevice, customPreviewWidth, customPreviewHeight, activeTab } = useEditorStore();
 
-  const { series, options } = useMemo(
+  const { series, options, autoHeight } = useMemo(
     () => buildChartData(data, columnMapping, settings),
     [data, columnMapping, settings]
   );
 
-  // In auto mode: chart height = '100%' (fills canvas).
-  // In standard mode: chart has fixed height independent of canvas.
   const isAutoHeight = settings.chartType.heightMode === 'auto';
-  const chartHeight = isAutoHeight
-    ? '100%'
-    : settings.chartType.standardHeight;
-
-  // Canvas gets an explicit height only if custom device is selected, or for auto mode we need a minimum
   const canvasHasFixedHeight = previewDevice === 'custom';
+
+  // Chart height logic:
+  // - Auto mode + no custom canvas: chart height driven by bar settings (auto-computed)
+  // - Auto mode + custom canvas: chart fills canvas height (100%)
+  // - Standard mode: chart has fixed height regardless of canvas
+  const chartHeight = (() => {
+    if (!isAutoHeight) return settings.chartType.standardHeight;
+    if (canvasHasFixedHeight) return '100%';
+    return autoHeight;
+  })();
 
   if (activeTab !== 'preview') return null;
 
@@ -123,7 +126,7 @@ export function ChartPreview() {
 
           {/* Chart area with layout padding */}
           <div
-            className={isAutoHeight ? 'flex-1 min-h-0' : ''}
+            className={isAutoHeight && canvasHasFixedHeight ? 'flex-1 min-h-0' : ''}
             style={{
               paddingTop: settings.layout.paddingTop,
               paddingRight: settings.layout.paddingRight,
@@ -136,7 +139,7 @@ export function ChartPreview() {
               overflow: 'hidden',
             }}
           >
-            <div style={{ width: '100%', height: isAutoHeight ? '100%' : undefined }}>
+            <div style={{ width: '100%', height: isAutoHeight && canvasHasFixedHeight ? '100%' : undefined }}>
               {series.length > 0 ? (
                 <ReactApexChart
                   options={options}
