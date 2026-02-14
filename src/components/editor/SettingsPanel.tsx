@@ -1,6 +1,7 @@
 'use client';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Accordion } from '@/components/ui/accordion';
 import { SearchSettings } from '@/components/shared/SearchSettings';
 import { useEditorStore } from '@/store/editorStore';
 
@@ -54,7 +55,7 @@ export function SettingsPanel() {
     <div className="w-[340px] border-l bg-white flex flex-col shrink-0">
       <SearchSettings />
       <ScrollArea className="flex-1">
-        <div className="pb-8">
+        <Accordion type="single" collapsible className="pb-8">
           {filteredSections.map((section) => (
             <section.Component key={section.id} />
           ))}
@@ -63,7 +64,7 @@ export function SettingsPanel() {
               No settings match &ldquo;{settingsSearchQuery}&rdquo;
             </div>
           )}
-        </div>
+        </Accordion>
       </ScrollArea>
     </div>
   );

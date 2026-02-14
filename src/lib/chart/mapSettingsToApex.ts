@@ -77,21 +77,27 @@ export function mapSettingsToApexOptions(
   // Flip axis: in ApexCharts, reversed reverses the axis direction
   const flipAxis = settings.xAxis.flipAxis;
 
-  // Data label position mapping: left/center/right
+  // Data label position mapping: left/center/right → ApexCharts position
+  // For horizontal bars: 'bottom'=left edge, 'center'=middle, 'top'=right edge of segment
+  // For vertical bars: 'bottom'=bottom, 'center'=middle, 'top'=top of segment
   const labelPos = settings.labels.dataPointPosition;
-  const apexDataLabelPos = labelPos === 'center' ? 'center' : 'top';
+  const apexDataLabelPos = (() => {
+    if (labelPos === 'left') return 'bottom';
+    if (labelPos === 'right') return 'top';
+    return 'center';
+  })() as 'top' | 'center' | 'bottom';
+
+  // Text anchor for alignment within position
+  const dataLabelTextAnchor = (() => {
+    if (labelPos === 'left') return 'start' as const;
+    if (labelPos === 'right') return 'end' as const;
+    return 'middle' as const;
+  })();
 
   // Data label colors: auto = contrast-based, custom = user-specified
   const dataLabelColors = settings.labels.dataPointColorMode === 'auto'
     ? colors.map((c) => getContrastColor(c))
     : [settings.labels.dataPointColor];
-
-  // Data label offset for left/right positioning
-  const dataLabelOffsetX = (() => {
-    if (labelPos === 'left') return isHorizontal ? -10 : -10;
-    if (labelPos === 'right') return isHorizontal ? 10 : 10;
-    return 0;
-  })();
 
   // Tick angle (ApexCharts uses negative rotation, 0 = horizontal)
   const tickRotation = settings.xAxis.tickAngle;
@@ -125,8 +131,8 @@ export function mapSettingsToApexOptions(
     plotOptions: {
       bar: {
         horizontal: isHorizontal,
-        barHeight: `${Math.max(10, Math.min(100, settings.bars.barHeight * 10))}%`,
-        columnWidth: `${Math.max(10, Math.min(100, settings.bars.barHeight * 10))}%`,
+        barHeight: `${Math.max(5, Math.min(100, Math.round(settings.bars.barHeight * 10 * (1 - settings.bars.spacingMain))))}%`,
+        columnWidth: `${Math.max(5, Math.min(100, Math.round(settings.bars.barHeight * 10 * (1 - settings.bars.spacingMain))))}%`,
         borderRadius: 0,
         borderRadiusApplication: 'end',
         dataLabels: {
@@ -144,20 +150,27 @@ export function mapSettingsToApexOptions(
           width: settings.bars.outlineWidth,
           colors: [settings.bars.outlineColor],
         }
-      : {
-          show: true,
-          width: 0,
-          colors: ['transparent'],
-        },
+      : settings.bars.spacingInStack > 0
+        ? {
+            show: true,
+            width: Math.max(1, Math.round(settings.bars.spacingInStack * 8)),
+            colors: [settings.layout.backgroundColor || '#ffffff'],
+          }
+        : {
+            show: true,
+            width: 0,
+            colors: ['transparent'],
+          },
     dataLabels: {
       enabled: settings.labels.showDataPointLabels,
+      textAnchor: dataLabelTextAnchor,
       style: {
         fontSize: `${settings.labels.dataPointFontSize}px`,
         fontFamily: settings.labels.dataPointFontFamily,
         fontWeight: settings.labels.dataPointFontWeight === 'bold' ? 700 : 400,
         colors: dataLabelColors,
       },
-      offsetX: dataLabelOffsetX + (settings.labels.dataPointCustomPadding ? settings.labels.dataPointPaddingLeft - settings.labels.dataPointPaddingRight : 0),
+      offsetX: settings.labels.dataPointCustomPadding ? settings.labels.dataPointPaddingLeft - settings.labels.dataPointPaddingRight : 0,
       offsetY: settings.labels.dataPointCustomPadding ? settings.labels.dataPointPaddingTop - settings.labels.dataPointPaddingBottom : 0,
       formatter: (val: number) => formatNumber(val, settings.numberFormatting),
     },
