@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useEditorStore } from '@/store/editorStore';
+import { defaultChartSettings, defaultData, defaultColumnMapping } from '@/lib/chart/config';
 import { EditorTopBar } from './EditorTopBar';
 import { ChartPreview } from './ChartPreview';
 import { DataEditor } from './DataEditor';
@@ -34,13 +35,17 @@ export function EditorLayout({ visualizationId }: EditorLayoutProps) {
         const res = await fetch(`/api/visualizations/${visualizationId}`);
         if (res.ok) {
           const viz = await res.json();
+          const hasData = Array.isArray(viz.data) && viz.data.length > 0;
+          const hasSettings = viz.settings && Object.keys(viz.settings).length > 0;
+          const hasMapping = viz.columnMapping && Object.keys(viz.columnMapping).length > 0;
+
           loadVisualization({
             id: viz.id,
             name: viz.name,
             chartType: viz.chartType || 'bar_stacked',
-            data: viz.data || [],
-            settings: viz.settings || {},
-            columnMapping: viz.columnMapping || {},
+            data: hasData ? viz.data : defaultData,
+            settings: hasSettings ? { ...defaultChartSettings, ...viz.settings } : defaultChartSettings,
+            columnMapping: hasMapping ? viz.columnMapping : defaultColumnMapping,
           });
         }
       } catch (error) {

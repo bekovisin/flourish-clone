@@ -31,19 +31,12 @@ export function DataEditor() {
       });
       return {
         field: col,
-        headerName: col,
+        headerName: `${col} ${isNumeric ? '(123)' : '(ABC)'}`,
         editable: true,
         sortable: true,
         filter: true,
         resizable: true,
         minWidth: 100,
-        headerClass: isNumeric ? 'ag-header-numeric' : 'ag-header-text',
-        headerComponentParams: {
-          template: `<div class="ag-cell-label-container" role="presentation">
-            <span class="ag-header-cell-text">${col}</span>
-            <span class="text-[9px] ml-1 opacity-50">${isNumeric ? '123' : 'ABC'}</span>
-          </div>`,
-        },
       };
     });
   }, [columns, data]);
@@ -174,8 +167,7 @@ export function DataEditor() {
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
             onCellValueChanged={onCellValueChanged}
-            rowSelection="multiple"
-            animateRows={true}
+            rowSelection={{ mode: 'multiRow' }}
             suppressMovableColumns={false}
             undoRedoCellEditing={true}
             undoRedoCellEditingLimit={20}

@@ -232,40 +232,22 @@ export function mapSettingsToApexOptions(
         formatter: (val: number) => formatNumber(val, settings.numberFormatting),
       },
     },
-    title: settings.header.title
-      ? {
-          text: settings.header.title,
-          align: settings.header.alignment as 'left' | 'center' | 'right',
-          style: {
-            fontSize: `${settings.header.titleStyling.fontSize}px`,
-            fontWeight: settings.header.titleStyling.fontWeight === 'bold' ? 'bold' : 'normal',
-            fontFamily: settings.header.titleStyling.fontFamily,
-            color: settings.header.titleStyling.color,
-          },
-        }
-      : undefined,
-    subtitle: settings.header.subtitle
-      ? {
-          text: settings.header.subtitle,
-          align: settings.header.alignment as 'left' | 'center' | 'right',
-          style: {
-            fontSize: `${settings.header.subtitleStyling.fontSize}px`,
-            fontWeight: settings.header.subtitleStyling.fontWeight === 'bold' ? 'bold' : 'normal',
-            fontFamily: settings.header.subtitleStyling.fontFamily,
-            color: settings.header.subtitleStyling.color,
-          },
-        }
-      : undefined,
+    // Title and subtitle are rendered in ChartPreview component directly
+    // so we don't set them here to avoid ApexCharts offsetY calculation issues
   };
 
-  // Add annotations
-  if (settings.annotations.annotations.length > 0) {
+  // Add annotations - only valid ones with text and coordinates
+  const validAnnotations = (settings.annotations?.annotations || []).filter(
+    (ann) => ann.text && ann.x != null && ann.y != null
+  );
+  if (validAnnotations.length > 0) {
     options.annotations = {
-      points: settings.annotations.annotations.map((ann) => ({
-        x: ann.x,
+      points: validAnnotations.map((ann) => ({
+        x: String(ann.x),
         y: ann.y,
         label: {
           text: ann.text,
+          offsetY: 0,
           style: {
             fontSize: `${ann.fontSize}px`,
             fontWeight: ann.fontWeight === 'bold' ? '700' : '400',

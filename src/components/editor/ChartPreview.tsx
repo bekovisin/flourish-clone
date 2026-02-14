@@ -123,12 +123,26 @@ export function ChartPreview() {
                 : undefined,
             }}
           >
-            <ReactApexChart
-              options={options}
-              series={series}
-              type="bar"
-              height={chartHeight}
-            />
+            {series.length > 0 ? (
+              <ReactApexChart
+                options={options}
+                series={series}
+                type="bar"
+                height={chartHeight}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+                <div className="text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40">
+                    <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+                    <path d="M18 17V9" />
+                    <path d="M13 17V5" />
+                    <path d="M8 17v-3" />
+                  </svg>
+                  <p>Add data in the Data tab to see your chart</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
