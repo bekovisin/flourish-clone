@@ -81,7 +81,7 @@ export function FooterSection() {
       />
 
       {/* Advanced Footer Styles */}
-      <SettingRow label="Advanced footer styles">
+      <SettingRow label="Advanced footer styles" variant="inline">
         <Switch
           checked={settings.advancedStyles}
           onCheckedChange={(checked) => update({ advancedStyles: checked })}
@@ -93,7 +93,7 @@ export function FooterSection() {
         <Input
           value={settings.sourceName}
           onChange={(e) => update({ sourceName: e.target.value })}
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
           placeholder="Enter source name..."
         />
       </SettingRow>
@@ -103,13 +103,13 @@ export function FooterSection() {
         <Input
           value={settings.sourceUrl}
           onChange={(e) => update({ sourceUrl: e.target.value })}
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
           placeholder="https://..."
         />
       </SettingRow>
 
       {/* Multiple Sources */}
-      <SettingRow label="Multiple sources">
+      <SettingRow label="Multiple sources" variant="inline">
         <Switch
           checked={settings.multipleSources}
           onCheckedChange={(checked) => update({ multipleSources: checked })}
@@ -121,7 +121,7 @@ export function FooterSection() {
         <Input
           value={settings.sourceLabel}
           onChange={(e) => update({ sourceLabel: e.target.value })}
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
           placeholder="Source"
         />
       </SettingRow>
@@ -153,7 +153,7 @@ export function FooterSection() {
         <Input
           value={settings.logoUrl}
           onChange={(e) => update({ logoUrl: e.target.value })}
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
           placeholder="https://..."
         />
       </SettingRow>
@@ -164,7 +164,7 @@ export function FooterSection() {
           value={settings.border}
           onValueChange={(v) => update({ border: v as BorderStyle })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

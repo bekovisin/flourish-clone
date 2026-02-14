@@ -6,6 +6,26 @@ export interface ColorPalette {
 
 export const colorPalettes: ColorPalette[] = [
   {
+    id: 'flourish',
+    name: 'Flourish',
+    colors: ['#4a90d9', '#e15759', '#f28e2b', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7'],
+  },
+  {
+    id: 'flourish_alternate',
+    name: 'Flourish Alternate',
+    colors: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
+  },
+  {
+    id: 'flourish_light',
+    name: 'Flourish Light',
+    colors: ['#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6', '#ffff99', '#b15928', '#1f78b4'],
+  },
+  {
+    id: 'flourish_blues',
+    name: 'Flourish Blues',
+    colors: ['#08519c', '#3182bd', '#6baed6', '#9ecae1', '#c6dbef', '#deebf7', '#f7fbff', '#4292c6'],
+  },
+  {
     id: 'default',
     name: 'Default',
     colors: ['#2E93fA', '#66DA26', '#546E7A', '#E91E63', '#FF9800', '#9C27B0', '#00BCD4', '#795548'],
@@ -67,7 +87,10 @@ export const colorPalettes: ColorPalette[] = [
   },
 ];
 
-export function getPaletteColors(paletteId: string): string[] {
+export function getPaletteColors(paletteId: string, customColors?: string[]): string[] {
+  if (customColors && customColors.length > 0) {
+    return customColors;
+  }
   const palette = colorPalettes.find((p) => p.id === paletteId);
   return palette ? palette.colors : colorPalettes[0].colors;
 }

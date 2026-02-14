@@ -51,7 +51,7 @@ export function ChartTypeSection() {
           value={settings.chartType}
           onValueChange={(v) => update({ chartType: v as ChartType })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -89,7 +89,7 @@ export function ChartTypeSection() {
           value={settings.gridMode}
           onValueChange={(v) => update({ gridMode: v as GridMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -105,7 +105,7 @@ export function ChartTypeSection() {
           value={settings.heightMode}
           onValueChange={(v) => update({ heightMode: v as HeightMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -145,7 +145,7 @@ export function ChartTypeSection() {
           value={settings.aggregationMode}
           onValueChange={(v) => update({ aggregationMode: v as AggregationMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -163,7 +163,7 @@ export function ChartTypeSection() {
           value={settings.sortMode}
           onValueChange={(v) => update({ sortMode: v as SortMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

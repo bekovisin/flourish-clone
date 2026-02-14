@@ -49,6 +49,15 @@ export const reportVersions = pgTable('report_versions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const colorThemes = pgTable('color_themes', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  colors: jsonb('colors').notNull().$type<string[]>(),
+  isBuiltIn: boolean('is_built_in').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export const dashboardTemplates = pgTable('dashboard_templates', {
   id: serial('id').primaryKey(),
   visualizationId: integer('visualization_id').notNull(),

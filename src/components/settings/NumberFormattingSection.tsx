@@ -41,7 +41,7 @@ export function NumberFormattingSection() {
             update({ thousandsSeparator: v })
           }
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -61,7 +61,7 @@ export function NumberFormattingSection() {
             update({ decimalSeparator: v })
           }
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -76,7 +76,7 @@ export function NumberFormattingSection() {
         <Input
           value={settings.prefix}
           onChange={(e) => update({ prefix: e.target.value })}
-          className="h-8 text-xs w-[140px]"
+          className="h-8 text-xs w-full"
           placeholder="e.g. $"
         />
       </SettingRow>
@@ -86,7 +86,7 @@ export function NumberFormattingSection() {
         <Input
           value={settings.suffix}
           onChange={(e) => update({ suffix: e.target.value })}
-          className="h-8 text-xs w-[140px]"
+          className="h-8 text-xs w-full"
           placeholder="e.g. %"
         />
       </SettingRow>

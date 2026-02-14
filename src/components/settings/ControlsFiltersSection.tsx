@@ -37,7 +37,7 @@ export function ControlsFiltersSection() {
           value={settings.seriesFilter}
           onValueChange={(v) => update({ seriesFilter: v as FilterMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -58,7 +58,7 @@ export function ControlsFiltersSection() {
       />
 
       {/* Filter Rows with No Data */}
-      <SettingRow label="Filter rows with no data">
+      <SettingRow label="Filter rows with no data" variant="inline">
         <Switch
           checked={settings.filterRowsNoData}
           onCheckedChange={(checked) => update({ filterRowsNoData: checked })}
@@ -71,7 +71,7 @@ export function ControlsFiltersSection() {
           value={settings.controlPosition}
           onValueChange={(v) => update({ controlPosition: v as ControlPosition })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

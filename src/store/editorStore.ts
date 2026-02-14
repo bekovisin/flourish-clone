@@ -4,7 +4,7 @@ import { DataRow } from '@/types/data';
 import { defaultChartSettings, defaultData, defaultColumnMapping } from '@/lib/chart/config';
 
 export type EditorTab = 'preview' | 'data';
-export type PreviewDevice = 'desktop' | 'tablet' | 'mobile' | 'fullscreen';
+export type PreviewDevice = 'desktop' | 'tablet' | 'mobile' | 'fullscreen' | 'custom';
 
 interface EditorState {
   // Visualization metadata
@@ -15,6 +15,8 @@ interface EditorState {
   // Tabs & UI
   activeTab: EditorTab;
   previewDevice: PreviewDevice;
+  customPreviewWidth: number;
+  customPreviewHeight: number;
   settingsSearchQuery: string;
 
   // Data
@@ -34,6 +36,7 @@ interface EditorState {
   setVisualizationName: (name: string) => void;
   setActiveTab: (tab: EditorTab) => void;
   setPreviewDevice: (device: PreviewDevice) => void;
+  setCustomPreviewSize: (width: number, height: number) => void;
   setSettingsSearchQuery: (query: string) => void;
   setData: (data: DataRow[]) => void;
   setColumnMapping: (mapping: ColumnMapping) => void;
@@ -59,6 +62,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   chartType: 'bar_stacked',
   activeTab: 'preview',
   previewDevice: 'desktop',
+  customPreviewWidth: 800,
+  customPreviewHeight: 600,
   settingsSearchQuery: '',
   data: defaultData,
   columnMapping: defaultColumnMapping,
@@ -71,6 +76,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setVisualizationName: (name) => set({ visualizationName: name, isDirty: true }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setPreviewDevice: (device) => set({ previewDevice: device }),
+  setCustomPreviewSize: (width, height) => set({ customPreviewWidth: width, customPreviewHeight: height }),
   setSettingsSearchQuery: (query) => set({ settingsSearchQuery: query }),
   setData: (data) => set({ data, isDirty: true }),
   setColumnMapping: (mapping) => set({ columnMapping: mapping, isDirty: true }),
@@ -96,6 +102,8 @@ export const useEditorStore = create<EditorState>((set) => ({
       chartType: 'bar_stacked',
       activeTab: 'preview',
       previewDevice: 'desktop',
+      customPreviewWidth: 800,
+      customPreviewHeight: 600,
       settingsSearchQuery: '',
       data: defaultData,
       columnMapping: defaultColumnMapping,

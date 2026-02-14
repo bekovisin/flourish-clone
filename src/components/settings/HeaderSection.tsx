@@ -54,13 +54,13 @@ function TextBlock({ subHeader, text, onTextChange, styling, onStylingChange }: 
         <Input
           value={text}
           onChange={(e) => onTextChange(e.target.value)}
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
           placeholder={`Enter ${subHeader.toLowerCase()}...`}
         />
       </SettingRow>
 
       {/* Show Styling Toggle */}
-      <SettingRow label="Show styling">
+      <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={showStyling}
           onCheckedChange={setShowStyling}
@@ -74,7 +74,7 @@ function TextBlock({ subHeader, text, onTextChange, styling, onStylingChange }: 
             <Input
               value={styling.fontFamily}
               onChange={(e) => onStylingChange({ fontFamily: e.target.value })}
-              className="h-8 text-xs w-[200px]"
+              className="h-8 text-xs w-full"
               placeholder="e.g. Arial, sans-serif"
             />
           </SettingRow>
@@ -95,7 +95,7 @@ function TextBlock({ subHeader, text, onTextChange, styling, onStylingChange }: 
               value={styling.fontWeight}
               onValueChange={(v) => onStylingChange({ fontWeight: v as 'normal' | 'bold' })}
             >
-              <SelectTrigger className="h-8 text-xs w-[200px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -214,7 +214,7 @@ export function HeaderSection() {
             value={settings.border}
             onValueChange={(v) => update({ border: v as BorderStyle })}
           >
-            <SelectTrigger className="h-8 text-xs w-[200px]">
+            <SelectTrigger className="h-8 text-xs w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

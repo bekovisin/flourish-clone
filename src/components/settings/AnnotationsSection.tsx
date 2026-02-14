@@ -85,7 +85,7 @@ export function AnnotationsSection() {
               onChange={(e) =>
                 updateAnnotation(annotation.id, { text: e.target.value })
               }
-              className="h-8 text-xs w-[140px]"
+              className="h-8 text-xs w-full"
               placeholder="Annotation text"
             />
           </SettingRow>
@@ -122,7 +122,7 @@ export function AnnotationsSection() {
                 updateAnnotation(annotation.id, { fontWeight: v })
               }
             >
-              <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

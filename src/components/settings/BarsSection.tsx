@@ -36,7 +36,7 @@ function SliderWithInput({ label, value, onChange, min, max, step }: SliderWithI
           min={min}
           max={max}
           step={step}
-          className="h-7 text-xs w-[70px]"
+          className="h-7 text-xs w-full"
         />
       </div>
       <Slider
@@ -101,7 +101,7 @@ export function BarsSection() {
       />
 
       {/* Outline */}
-      <SettingRow label="Outline">
+      <SettingRow label="Outline" variant="inline">
         <Switch
           checked={settings.outline}
           onCheckedChange={(checked) => update({ outline: checked })}

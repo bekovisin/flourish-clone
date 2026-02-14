@@ -43,7 +43,7 @@ export function LabelsSection() {
           value={settings.barLabelStyle}
           onValueChange={(v) => update({ barLabelStyle: v as BarLabelStyle })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -56,7 +56,7 @@ export function LabelsSection() {
       {/* DATA POINT LABELS */}
       <SubHeader>Data Point Labels</SubHeader>
 
-      <SettingRow label="Show labels on data points">
+      <SettingRow label="Show labels on data points" variant="inline">
         <Switch
           checked={settings.showDataPointLabels}
           onCheckedChange={(checked) => update({ showDataPointLabels: checked })}
@@ -88,7 +88,7 @@ export function LabelsSection() {
                 update({ dataPointPosition: v as DataPointLabelPosition })
               }
             >
-              <SelectTrigger className="h-8 text-xs w-[200px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -109,7 +109,7 @@ export function LabelsSection() {
           value={settings.stackLabelMode}
           onValueChange={(v) => update({ stackLabelMode: v as StackLabelMode })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

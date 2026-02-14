@@ -17,7 +17,7 @@ const deviceWidths: Record<string, string> = {
 
 export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
-  const { settings, data, columnMapping, previewDevice, activeTab } = useEditorStore();
+  const { settings, data, columnMapping, previewDevice, customPreviewWidth, customPreviewHeight, activeTab } = useEditorStore();
 
   const { series, options } = useMemo(
     () => buildChartData(data, columnMapping, settings),
@@ -45,7 +45,9 @@ export function ChartPreview() {
           id="chart-container"
           className="bg-white rounded-lg shadow-sm border transition-all duration-300"
           style={{
-            width: deviceWidths[previewDevice],
+            width: previewDevice === 'custom' ? `${customPreviewWidth}px` : deviceWidths[previewDevice],
+            height: previewDevice === 'custom' ? `${customPreviewHeight}px` : undefined,
+            overflow: previewDevice === 'custom' ? 'auto' : undefined,
             maxWidth: settings.layout.maxWidth > 0 ? settings.layout.maxWidth : undefined,
             backgroundColor: settings.layout.backgroundColor,
           }}
@@ -115,7 +117,7 @@ export function ChartPreview() {
 
           {/* Chart */}
           <div
-            className="px-2"
+            className="px-4"
             style={{
               backgroundColor: settings.plotBackground.backgroundColor,
               border: settings.plotBackground.border

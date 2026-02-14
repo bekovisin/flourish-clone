@@ -56,7 +56,7 @@ function StylingPanel({ styling, onChange }: StylingPanelProps) {
           value={styling.fontFamily}
           onValueChange={(v) => onChange({ fontFamily: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[160px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -84,7 +84,7 @@ function StylingPanel({ styling, onChange }: StylingPanelProps) {
           value={styling.fontWeight}
           onValueChange={(v) => onChange({ fontWeight: v as 'normal' | 'bold' })}
         >
-          <SelectTrigger className="h-8 text-xs w-[160px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -167,7 +167,7 @@ export function XAxisSection() {
           value={settings.position}
           onValueChange={(v) => update({ position: v as AxisPosition })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -188,7 +188,7 @@ export function XAxisSection() {
           value={settings.scaleType}
           onValueChange={(v) => update({ scaleType: v as ScaleType })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -203,7 +203,7 @@ export function XAxisSection() {
           value={settings.min}
           onChange={(e) => update({ min: e.target.value })}
           placeholder="Auto"
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
         />
       </SettingRow>
 
@@ -212,11 +212,11 @@ export function XAxisSection() {
           value={settings.max}
           onChange={(e) => update({ max: e.target.value })}
           placeholder="Auto"
-          className="h-8 text-xs w-[200px]"
+          className="h-8 text-xs w-full"
         />
       </SettingRow>
 
-      <SettingRow label="Flip axis">
+      <SettingRow label="Flip axis" variant="inline">
         <Switch
           checked={settings.flipAxis}
           onCheckedChange={(checked) => update({ flipAxis: checked })}
@@ -231,7 +231,7 @@ export function XAxisSection() {
           value={settings.titleType}
           onValueChange={(v) => update({ titleType: v as AxisTitleType })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -247,12 +247,12 @@ export function XAxisSection() {
             value={settings.titleText}
             onChange={(e) => update({ titleText: e.target.value })}
             placeholder="Enter title..."
-            className="h-8 text-xs w-[200px]"
+            className="h-8 text-xs w-full"
           />
         </SettingRow>
       )}
 
-      <SettingRow label="Show styling">
+      <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={settings.showTitleStyling}
           onCheckedChange={(checked) => update({ showTitleStyling: checked })}
@@ -271,7 +271,7 @@ export function XAxisSection() {
           value={settings.tickPosition}
           onValueChange={(v) => update({ tickPosition: v as TickPosition })}
         >
-          <SelectTrigger className="h-8 text-xs w-[200px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -282,7 +282,7 @@ export function XAxisSection() {
         </Select>
       </SettingRow>
 
-      <SettingRow label="Show styling">
+      <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={settings.showTickStyling}
           onCheckedChange={(checked) => update({ showTickStyling: checked })}
@@ -296,7 +296,7 @@ export function XAxisSection() {
       {/* GRIDLINES */}
       <SubHeader>Gridlines</SubHeader>
 
-      <SettingRow label="Gridlines">
+      <SettingRow label="Gridlines" variant="inline">
         <Switch
           checked={settings.gridlines}
           onCheckedChange={(checked) => update({ gridlines: checked })}
@@ -305,7 +305,7 @@ export function XAxisSection() {
 
       {settings.gridlines && (
         <>
-          <SettingRow label="Show styling">
+          <SettingRow label="Show styling" variant="inline">
             <Switch
               checked={settings.showGridlineStyling}
               onCheckedChange={(checked) => update({ showGridlineStyling: checked })}

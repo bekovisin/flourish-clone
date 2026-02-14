@@ -32,7 +32,7 @@ export function AnimationsSection() {
   return (
     <AccordionSection id="animations" title="Animations">
       {/* Enable Animations */}
-      <SettingRow label="Enable animations">
+      <SettingRow label="Enable animations" variant="inline">
         <Switch
           checked={settings.enabled}
           onCheckedChange={(checked) => update({ enabled: checked })}
@@ -58,7 +58,7 @@ export function AnimationsSection() {
               value={settings.type}
               onValueChange={(v) => update({ type: v as AnimationType })}
             >
-              <SelectTrigger className="h-8 text-xs w-[200px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

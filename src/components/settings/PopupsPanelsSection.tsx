@@ -26,7 +26,7 @@ export function PopupsPanelsSection() {
   return (
     <AccordionSection id="popups-panels" title="Popups &amp; panels">
       {/* Show popup */}
-      <SettingRow label="Show popup">
+      <SettingRow label="Show popup" variant="inline">
         <Switch
           checked={settings.showPopup}
           onCheckedChange={(v) => update({ showPopup: v })}
@@ -52,7 +52,7 @@ export function PopupsPanelsSection() {
               value={settings.popupStyle}
               onValueChange={(v: PopupStyle) => update({ popupStyle: v })}
             >
-              <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

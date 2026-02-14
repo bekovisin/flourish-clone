@@ -25,7 +25,7 @@ export function PlotBackgroundSection() {
       />
 
       {/* Border toggle */}
-      <SettingRow label="Border">
+      <SettingRow label="Border" variant="inline">
         <Switch
           checked={settings.border}
           onCheckedChange={(v) => update({ border: v })}

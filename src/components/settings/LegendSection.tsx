@@ -46,7 +46,7 @@ export function LegendSection() {
           value={settings.clickToFilter}
           onValueChange={(v: FilterMode) => update({ clickToFilter: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -136,7 +136,7 @@ export function LegendSection() {
         <Input
           value={settings.titleText}
           onChange={(e) => update({ titleText: e.target.value })}
-          className="h-8 text-xs w-[140px]"
+          className="h-8 text-xs w-full"
           placeholder="Legend title"
         />
       </SettingRow>
@@ -185,7 +185,7 @@ export function LegendSection() {
       />
 
       {/* Outline */}
-      <SettingRow label="Outline">
+      <SettingRow label="Outline" variant="inline">
         <Switch
           checked={settings.outline}
           onCheckedChange={(v) => update({ outline: v })}
@@ -219,7 +219,7 @@ export function LegendSection() {
           value={settings.orientation}
           onValueChange={(v: LegendOrientation) => update({ orientation: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -237,7 +237,7 @@ export function LegendSection() {
             update({ dataColorsHeader: v })
           }
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

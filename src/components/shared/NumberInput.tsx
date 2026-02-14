@@ -15,9 +15,9 @@ interface NumberInputProps {
 
 export function NumberInput({ label, value, onChange, min, max, step = 1, suffix }: NumberInputProps) {
   return (
-    <div className="flex items-center gap-2">
-      <Label className="text-xs text-gray-500 min-w-[80px] shrink-0">{label}</Label>
-      <div className="flex items-center gap-1 flex-1">
+    <div className="space-y-1.5">
+      <Label className="text-xs text-gray-500">{label}</Label>
+      <div className="flex items-center gap-1">
         <Input
           type="number"
           value={value}

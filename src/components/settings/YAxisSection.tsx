@@ -33,7 +33,7 @@ export function YAxisSection() {
           value={settings.position}
           onValueChange={(v: YAxisPosition) => update({ position: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -50,7 +50,7 @@ export function YAxisSection() {
           value={settings.scaleType}
           onValueChange={(v: ScaleType) => update({ scaleType: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +65,7 @@ export function YAxisSection() {
         <Input
           value={settings.min}
           onChange={(e) => update({ min: e.target.value })}
-          className="h-8 text-xs w-[140px]"
+          className="h-8 text-xs w-full"
           placeholder="Auto"
         />
       </SettingRow>
@@ -74,7 +74,7 @@ export function YAxisSection() {
         <Input
           value={settings.max}
           onChange={(e) => update({ max: e.target.value })}
-          className="h-8 text-xs w-[140px]"
+          className="h-8 text-xs w-full"
           placeholder="Auto"
         />
       </SettingRow>
@@ -91,7 +91,7 @@ export function YAxisSection() {
           value={settings.titleType}
           onValueChange={(v: AxisTitleType) => update({ titleType: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -106,13 +106,13 @@ export function YAxisSection() {
           <Input
             value={settings.titleText}
             onChange={(e) => update({ titleText: e.target.value })}
-            className="h-8 text-xs w-[140px]"
+            className="h-8 text-xs w-full"
             placeholder="Y axis title"
           />
         </SettingRow>
       )}
 
-      <SettingRow label="Show styling">
+      <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={settings.showTitleStyling}
           onCheckedChange={(v) => update({ showTitleStyling: v })}
@@ -129,7 +129,7 @@ export function YAxisSection() {
                   titleStyling: { ...settings.titleStyling, fontFamily: e.target.value },
                 })
               }
-              className="h-8 text-xs w-[140px]"
+              className="h-8 text-xs w-full"
             />
           </SettingRow>
           <NumberInput
@@ -153,7 +153,7 @@ export function YAxisSection() {
                 })
               }
             >
-              <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +186,7 @@ export function YAxisSection() {
           value={settings.tickPosition}
           onValueChange={(v: TickPosition) => update({ tickPosition: v })}
         >
-          <SelectTrigger className="h-8 text-xs w-[140px]">
+          <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -197,7 +197,7 @@ export function YAxisSection() {
         </Select>
       </SettingRow>
 
-      <SettingRow label="Show styling">
+      <SettingRow label="Show styling" variant="inline">
         <Switch
           checked={settings.showTickStyling}
           onCheckedChange={(v) => update({ showTickStyling: v })}
@@ -214,7 +214,7 @@ export function YAxisSection() {
                   tickStyling: { ...settings.tickStyling, fontFamily: e.target.value },
                 })
               }
-              className="h-8 text-xs w-[140px]"
+              className="h-8 text-xs w-full"
             />
           </SettingRow>
           <NumberInput
@@ -238,7 +238,7 @@ export function YAxisSection() {
                 })
               }
             >
-              <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -266,7 +266,7 @@ export function YAxisSection() {
         </Label>
       </div>
 
-      <SettingRow label="Show gridlines">
+      <SettingRow label="Show gridlines" variant="inline">
         <Switch
           checked={settings.gridlines}
           onCheckedChange={(v) => update({ gridlines: v })}
@@ -275,7 +275,7 @@ export function YAxisSection() {
 
       {settings.gridlines && (
         <>
-          <SettingRow label="Show styling">
+          <SettingRow label="Show styling" variant="inline">
             <Switch
               checked={settings.showGridlineStyling}
               onCheckedChange={(v) => update({ showGridlineStyling: v })}

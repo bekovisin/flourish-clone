@@ -34,8 +34,8 @@ export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {label && <Label className="text-xs text-gray-500 min-w-[80px]">{label}</Label>}
+    <div className="space-y-1.5">
+      {label && <Label className="text-xs text-gray-500">{label}</Label>}
       <Popover>
         <PopoverTrigger asChild>
           <button

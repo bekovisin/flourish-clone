@@ -38,6 +38,8 @@ export interface ColorsSettings {
   palette: string;
   extend: boolean;
   customOverrides: string;
+  customPaletteColors?: string[];
+  themeId?: number;
 }
 
 // Bars

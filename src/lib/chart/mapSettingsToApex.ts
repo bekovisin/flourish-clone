@@ -13,7 +13,7 @@ function parseCustomOverrides(overrides: string): Record<string, string> {
 }
 
 function resolveColors(settings: ChartSettings['colors'], seriesNames: string[]): string[] {
-  let colors = getPaletteColors(settings.palette);
+  let colors = getPaletteColors(settings.palette, settings.customPaletteColors);
   if (settings.extend) {
     colors = extendColors(colors, Math.max(seriesNames.length, colors.length));
   }
@@ -122,7 +122,12 @@ export function mapSettingsToApexOptions(
     },
     xaxis: {
       categories,
-      position: isHorizontal ? undefined : (settings.xAxis.position === 'top' ? 'top' : 'bottom'),
+      position: (() => {
+        const pos = settings.xAxis.position;
+        if (pos === 'hidden') return 'bottom'; // hidden handled by show:false below
+        if (pos === 'top' || pos === 'float_up') return 'top';
+        return 'bottom'; // 'bottom', 'float_down'
+      })(),
       axisBorder: {
         show: settings.xAxis.position !== 'hidden',
       },
@@ -199,10 +204,10 @@ export function mapSettingsToApexOptions(
         },
       },
       padding: {
-        top: settings.layout.paddingTop,
-        right: settings.layout.paddingRight,
-        bottom: settings.layout.paddingBottom,
-        left: settings.layout.paddingLeft,
+        top: settings.layout.paddingTop + 10,
+        right: settings.layout.paddingRight + 10,
+        bottom: settings.layout.paddingBottom + 10,
+        left: settings.layout.paddingLeft + 10,
       },
     },
     legend: {
