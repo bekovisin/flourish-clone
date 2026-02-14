@@ -114,16 +114,16 @@ export function ColumnMapper() {
           <div className="space-y-2">
             <Label className="text-xs font-medium text-gray-500">Charts grid</Label>
             <Select
-              value={columnMapping.chartsGrid || ''}
+              value={columnMapping.chartsGrid || '__none__'}
               onValueChange={(val) =>
-                setColumnMapping({ ...columnMapping, chartsGrid: val || undefined })
+                setColumnMapping({ ...columnMapping, chartsGrid: val === '__none__' ? undefined : val })
               }
             >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="None (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="" className="text-xs">
+                <SelectItem value="__none__" className="text-xs">
                   None
                 </SelectItem>
                 {availableColumns.map((col) => (
@@ -139,16 +139,16 @@ export function ColumnMapper() {
           <div className="space-y-2">
             <Label className="text-xs font-medium text-gray-500">Row filter</Label>
             <Select
-              value={columnMapping.rowFilter || ''}
+              value={columnMapping.rowFilter || '__none__'}
               onValueChange={(val) =>
-                setColumnMapping({ ...columnMapping, rowFilter: val || undefined })
+                setColumnMapping({ ...columnMapping, rowFilter: val === '__none__' ? undefined : val })
               }
             >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="None (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="" className="text-xs">
+                <SelectItem value="__none__" className="text-xs">
                   None
                 </SelectItem>
                 {availableColumns.map((col) => (
