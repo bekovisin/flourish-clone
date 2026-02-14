@@ -131,6 +131,8 @@ export interface XAxisSettings {
   showGridlineStyling: boolean;
 }
 
+export type YAxisSpaceMode = 'auto' | 'fixed';
+
 export interface YAxisSettings {
   position: YAxisPosition;
   scaleType: ScaleType;
@@ -143,6 +145,9 @@ export interface YAxisSettings {
   tickPosition: TickPosition;
   tickStyling: AxisStyling;
   showTickStyling: boolean;
+  tickPadding: number;
+  spaceMode: YAxisSpaceMode;
+  spaceModeValue: number;
   gridlines: boolean;
   gridlineStyling: { color: string; width: number; dashArray: number };
   showGridlineStyling: boolean;

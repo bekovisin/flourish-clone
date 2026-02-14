@@ -15,7 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition } from '@/types/chart';
+import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition, YAxisSpaceMode } from '@/types/chart';
 
 export function YAxisSection() {
   const settings = useEditorStore((s) => s.settings.yAxis);
@@ -196,6 +196,43 @@ export function YAxisSection() {
           </SelectContent>
         </Select>
       </SettingRow>
+
+      <NumberInput
+        label="Label padding"
+        value={settings.tickPadding}
+        onChange={(v) => update({ tickPadding: v })}
+        min={0}
+        max={40}
+        step={1}
+        suffix="px"
+      />
+
+      <SettingRow label="Space mode">
+        <Select
+          value={settings.spaceMode}
+          onValueChange={(v: YAxisSpaceMode) => update({ spaceMode: v })}
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">Auto</SelectItem>
+            <SelectItem value="fixed">Fixed</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      {settings.spaceMode === 'fixed' && (
+        <NumberInput
+          label="Label width"
+          value={settings.spaceModeValue}
+          onChange={(v) => update({ spaceModeValue: v })}
+          min={30}
+          max={400}
+          step={5}
+          suffix="px"
+        />
+      )}
 
       <SettingRow label="Show styling" variant="inline">
         <Switch

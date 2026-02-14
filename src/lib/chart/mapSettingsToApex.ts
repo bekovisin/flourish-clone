@@ -73,6 +73,7 @@ export function mapSettingsToApexOptions(
   const seriesNames = mapping.values || [];
   const categories = buildCategories(data, mapping);
   const colors = resolveColors(settings.colors, seriesNames);
+  const isAboveBars = settings.labels.barLabelStyle === 'above_bars';
 
   // Flip axis: in ApexCharts, reversed reverses the axis direction
   const flipAxis = settings.xAxis.flipAxis;
@@ -236,13 +237,17 @@ export function mapSettingsToApexOptions(
       reversed: flipAxis,
       logarithmic: settings.yAxis.scaleType === 'log',
       labels: {
-        show: settings.yAxis.position !== 'hidden',
+        show: settings.yAxis.position !== 'hidden' && !(isHorizontal && isAboveBars),
+        maxWidth: isHorizontal
+          ? (settings.yAxis.spaceMode === 'fixed' ? settings.yAxis.spaceModeValue : 300)
+          : undefined,
         style: {
           fontFamily: settings.yAxis.tickStyling.fontFamily,
           fontSize: `${settings.yAxis.tickStyling.fontSize}px`,
           fontWeight: settings.yAxis.tickStyling.fontWeight === 'bold' ? 700 : 400,
           colors: settings.yAxis.tickStyling.color,
         },
+        offsetX: isHorizontal ? -(settings.yAxis.tickPadding || 0) : 0,
         formatter: !isHorizontal
           ? (val: number) => formatNumber(val, settings.numberFormatting)
           : undefined,
@@ -330,6 +335,29 @@ export function mapSettingsToApexOptions(
         },
       })),
     };
+  }
+
+  // "Above bars" label style: add category names as yaxis annotations
+  if (isHorizontal && isAboveBars && categories.length > 0) {
+    if (!options.annotations) options.annotations = {};
+    options.annotations.yaxis = categories.map((cat) => ({
+      y: cat,
+      borderColor: 'transparent',
+      label: {
+        text: cat,
+        position: 'front',
+        offsetX: -10,
+        offsetY: 0,
+        style: {
+          fontSize: `${settings.yAxis.tickStyling.fontSize}px`,
+          fontFamily: settings.yAxis.tickStyling.fontFamily,
+          fontWeight: settings.yAxis.tickStyling.fontWeight === 'bold' ? '700' : '400',
+          color: settings.yAxis.tickStyling.color,
+          background: 'transparent',
+          padding: { left: 0, right: 0, top: 0, bottom: 0 },
+        },
+      },
+    }));
   }
 
   return options;

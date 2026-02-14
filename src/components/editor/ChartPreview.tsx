@@ -17,24 +17,31 @@ const deviceWidths: Record<string, string> = {
 
 export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
-  const { settings, data, columnMapping, previewDevice, customPreviewWidth, customPreviewHeight, activeTab } = useEditorStore();
+  const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab } = useEditorStore();
 
   const { series, options, autoHeight } = useMemo(
     () => buildChartData(data, columnMapping, settings),
     [data, columnMapping, settings]
   );
 
+  // Force ApexCharts remount when formatter-dependent settings change
+  // (ApexCharts caches formatter closures and won't re-render otherwise)
+  const chartKey = useMemo(() => {
+    const nf = settings.numberFormatting;
+    return `${nf.decimalPlaces}-${nf.thousandsSeparator}-${nf.decimalSeparator}-${nf.prefix}-${nf.suffix}`;
+  }, [settings.numberFormatting]);
+
   const isAutoHeight = settings.chartType.heightMode === 'auto';
-  const canvasHasFixedHeight = previewDevice === 'custom';
+  const hasFixedHeight = !isAutoHeight && previewDevice === 'custom';
 
   // Chart height logic:
-  // - Auto mode + no custom canvas: chart height driven by bar settings (auto-computed)
-  // - Auto mode + custom canvas: chart fills canvas height (100%)
-  // - Standard mode: chart has fixed height regardless of canvas
+  // - Auto mode: chart height driven by bar settings (auto-computed from barHeight + spacing)
+  // - Standard mode + custom preview: canvas has fixed height, chart fills it (100%)
+  // - Standard mode + other presets: chart uses the standardHeight value directly
   const chartHeight = (() => {
-    if (!isAutoHeight) return settings.chartType.standardHeight;
-    if (canvasHasFixedHeight) return '100%';
-    return autoHeight;
+    if (isAutoHeight) return autoHeight;
+    if (previewDevice === 'custom') return '100%';
+    return settings.chartType.standardHeight;
   })();
 
   if (activeTab !== 'preview') return null;
@@ -54,7 +61,7 @@ export function ChartPreview() {
           className="bg-white rounded-lg shadow-sm border transition-all duration-300"
           style={{
             width: previewDevice === 'custom' ? `${customPreviewWidth}px` : deviceWidths[previewDevice],
-            height: canvasHasFixedHeight ? `${customPreviewHeight}px` : undefined,
+            height: hasFixedHeight ? `${settings.chartType.standardHeight}px` : undefined,
             maxWidth: settings.layout.maxWidth > 0 ? settings.layout.maxWidth : undefined,
             backgroundColor: settings.layout.backgroundColor,
             display: 'flex',
@@ -126,7 +133,7 @@ export function ChartPreview() {
 
           {/* Chart area with layout padding */}
           <div
-            className={isAutoHeight && canvasHasFixedHeight ? 'flex-1 min-h-0' : ''}
+            className={hasFixedHeight ? 'flex-1 min-h-0' : ''}
             style={{
               paddingTop: settings.layout.paddingTop,
               paddingRight: settings.layout.paddingRight,
@@ -139,9 +146,10 @@ export function ChartPreview() {
               overflow: 'hidden',
             }}
           >
-            <div style={{ width: '100%', height: isAutoHeight && canvasHasFixedHeight ? '100%' : undefined }}>
+            <div style={{ width: '100%', height: hasFixedHeight ? '100%' : undefined }}>
               {series.length > 0 ? (
                 <ReactApexChart
+                  key={chartKey}
                   options={options}
                   series={series}
                   type="bar"

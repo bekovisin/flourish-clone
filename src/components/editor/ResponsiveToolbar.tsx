@@ -13,7 +13,7 @@ const devices: { id: PreviewDevice; icon: React.ReactNode; label: string }[] = [
   { id: 'custom', icon: <Settings2 className="w-4 h-4" />, label: 'Custom size' },
 ];
 
-function DimensionInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function WidthInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [localValue, setLocalValue] = useState(String(value));
 
   useEffect(() => {
@@ -52,6 +52,66 @@ function DimensionInput({ value, onChange }: { value: number; onChange: (v: numb
   );
 }
 
+function HeightInput({
+  value,
+  isAuto,
+  onChange,
+  onSetAuto,
+}: {
+  value: number;
+  isAuto: boolean;
+  onChange: (v: number) => void;
+  onSetAuto: () => void;
+}) {
+  const [localValue, setLocalValue] = useState(isAuto ? 'auto' : String(value));
+
+  useEffect(() => {
+    setLocalValue(isAuto ? 'auto' : String(value));
+  }, [value, isAuto]);
+
+  const commit = () => {
+    const trimmed = localValue.trim().toLowerCase();
+    if (trimmed === 'auto' || trimmed === '') {
+      onSetAuto();
+      setLocalValue('auto');
+      return;
+    }
+    const num = parseInt(trimmed);
+    if (!isNaN(num) && num >= 100 && num <= 5000) {
+      onChange(num);
+    } else {
+      setLocalValue(isAuto ? 'auto' : String(value));
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            commit();
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="w-16 h-7 rounded-md border border-gray-200 px-2 text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="auto"
+      />
+      {!isAuto && (
+        <button
+          onClick={onSetAuto}
+          className="h-7 px-2 rounded-md border border-gray-200 text-[10px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+        >
+          Auto
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ResponsiveToolbar() {
   const {
     previewDevice,
@@ -59,7 +119,11 @@ export function ResponsiveToolbar() {
     customPreviewWidth,
     customPreviewHeight,
     setCustomPreviewSize,
+    settings,
+    updateSettings,
   } = useEditorStore();
+
+  const isAutoHeight = settings.chartType.heightMode === 'auto';
 
   return (
     <TooltipProvider>
@@ -88,14 +152,22 @@ export function ResponsiveToolbar() {
 
         {previewDevice === 'custom' && (
           <div className="flex items-center gap-1.5 ml-1">
-            <DimensionInput
+            <WidthInput
               value={customPreviewWidth}
               onChange={(w) => setCustomPreviewSize(w, customPreviewHeight)}
             />
-            <span className="text-xs text-gray-400">×</span>
-            <DimensionInput
+            <span className="text-xs text-gray-400">&times;</span>
+            <HeightInput
               value={customPreviewHeight}
-              onChange={(h) => setCustomPreviewSize(customPreviewWidth, h)}
+              isAuto={isAutoHeight}
+              onChange={(h) => {
+                // Switch to standard height mode with fixed height
+                updateSettings('chartType', { heightMode: 'standard', standardHeight: h });
+                setCustomPreviewSize(customPreviewWidth, h);
+              }}
+              onSetAuto={() => {
+                updateSettings('chartType', { heightMode: 'auto' });
+              }}
             />
             <span className="text-xs text-gray-400">px</span>
           </div>
