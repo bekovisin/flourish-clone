@@ -135,6 +135,9 @@ export const defaultChartSettings: ChartSettings = {
     customOrder: '',
     maxWidth: 100,
     orientation: 'horizontal',
+    position: 'below',
+    overlayX: 10,
+    overlayY: 10,
     dataColorsHeader: 'auto',
   },
   popupsPanels: {

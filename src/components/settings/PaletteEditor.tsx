@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 import {
   Dialog,
@@ -59,12 +59,38 @@ export function PaletteEditor({
     setColors([...colors, '#888888']);
   };
 
-  const moveColor = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= colors.length) return;
+  // Drag-and-drop state
+  const dragIndexRef = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    dragIndexRef.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = dragIndexRef.current;
+    if (dragIndex === null || dragIndex === dropIndex) {
+      setDragOverIndex(null);
+      return;
+    }
     const newColors = [...colors];
-    [newColors[index], newColors[newIndex]] = [newColors[newIndex], newColors[index]];
+    const [dragged] = newColors.splice(dragIndex, 1);
+    newColors.splice(dropIndex, 0, dragged);
     setColors(newColors);
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
   };
 
   const handleApply = () => {
@@ -90,16 +116,22 @@ export function PaletteEditor({
 
           <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
             {colors.map((color, index) => (
-              <div key={index} className="flex items-center gap-2 group">
-                {/* Grip / Reorder buttons */}
-                <div className="flex flex-col shrink-0">
-                  <button
-                    onClick={() => moveColor(index, 'up')}
-                    disabled={index === 0}
-                    className="text-gray-300 hover:text-gray-500 disabled:opacity-30 p-0 leading-none"
-                  >
-                    <GripVertical className="w-3.5 h-3.5" />
-                  </button>
+              <div
+                key={index}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center gap-2 group rounded-md transition-colors ${
+                  dragOverIndex === index
+                    ? 'bg-blue-50 border border-blue-200 border-dashed'
+                    : 'border border-transparent'
+                } ${dragIndexRef.current === index ? 'opacity-40' : ''}`}
+              >
+                {/* Drag handle */}
+                <div className="shrink-0 cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500">
+                  <GripVertical className="w-3.5 h-3.5" />
                 </div>
 
                 {/* Color swatch with picker */}

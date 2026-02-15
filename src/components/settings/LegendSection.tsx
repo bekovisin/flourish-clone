@@ -20,6 +20,7 @@ import type {
   FilterMode,
   LegendAlignment,
   LegendOrientation,
+  LegendPosition,
   DataColorsHeader,
 } from '@/types/chart';
 
@@ -281,6 +282,46 @@ export function LegendSection() {
               </SelectContent>
             </Select>
           </SettingRow>
+
+          {/* Position */}
+          <SettingRow label="Position">
+            <Select
+              value={settings.position || 'below'}
+              onValueChange={(v: LegendPosition) => update({ position: v })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="below">Below chart</SelectItem>
+                <SelectItem value="overlay">Overlay on chart</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          {/* Overlay position controls */}
+          {(settings.position || 'below') === 'overlay' && (
+            <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+              <NumberInput
+                label="X offset"
+                value={settings.overlayX ?? 10}
+                onChange={(v) => update({ overlayX: v })}
+                min={0}
+                max={500}
+                step={5}
+                suffix="px"
+              />
+              <NumberInput
+                label="Y offset"
+                value={settings.overlayY ?? 10}
+                onChange={(v) => update({ overlayY: v })}
+                min={0}
+                max={500}
+                step={5}
+                suffix="px"
+              />
+            </div>
+          )}
 
           {/* Add data colors to header */}
           <SettingRow label="Data colors in header">

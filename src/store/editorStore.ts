@@ -17,6 +17,7 @@ interface EditorState {
   previewDevice: PreviewDevice;
   customPreviewWidth: number;
   customPreviewHeight: number;
+  canvasBackgroundColor: string;
   settingsSearchQuery: string;
 
   // Data
@@ -37,6 +38,7 @@ interface EditorState {
   setActiveTab: (tab: EditorTab) => void;
   setPreviewDevice: (device: PreviewDevice) => void;
   setCustomPreviewSize: (width: number, height: number) => void;
+  setCanvasBackgroundColor: (color: string) => void;
   setSettingsSearchQuery: (query: string) => void;
   setData: (data: DataRow[]) => void;
   setColumnMapping: (mapping: ColumnMapping) => void;
@@ -103,6 +105,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   previewDevice: 'desktop',
   customPreviewWidth: 800,
   customPreviewHeight: 600,
+  canvasBackgroundColor: '#d1d5db',
   settingsSearchQuery: '',
   data: defaultData,
   columnMapping: defaultColumnMapping,
@@ -116,6 +119,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setPreviewDevice: (device) => set({ previewDevice: device }),
   setCustomPreviewSize: (width, height) => set({ customPreviewWidth: width, customPreviewHeight: height }),
+  setCanvasBackgroundColor: (color) => set({ canvasBackgroundColor: color }),
   setSettingsSearchQuery: (query) => set({ settingsSearchQuery: query }),
   setData: (data) => set({ data, isDirty: true }),
   setColumnMapping: (mapping) => set({ columnMapping: mapping, isDirty: true }),
@@ -143,6 +147,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       previewDevice: 'desktop',
       customPreviewWidth: 800,
       customPreviewHeight: 600,
+      canvasBackgroundColor: '#d1d5db',
       settingsSearchQuery: '',
       data: defaultData,
       columnMapping: defaultColumnMapping,

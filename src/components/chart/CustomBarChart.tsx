@@ -465,8 +465,9 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   // Y-axis label max width for truncation/wrapping
   const yLabelMaxWidth = yAxisLabelWidth - 4;
 
-  // Legend height estimate for SVG export
-  const legendHeight = settings.legend.show ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
+  // Legend height estimate for SVG export — only add space below when position is 'below'
+  const legendIsOverlay = settings.legend.position === 'overlay';
+  const legendHeight = settings.legend.show && !legendIsOverlay ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
   const totalSvgHeight = svgHeight + legendHeight;
 
   // Background color - use layout bg with opacity support
@@ -515,6 +516,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
 
         {/* ── Gridlines ── */}
         {settings.xAxis.gridlines && xTicksAll.map((tick) => {
+          // Skip the zero-position gridline — it's rendered separately by the zero line setting
+          if (tick === 0 && hasZeroInRange) return null;
           const x = padding.left + xScale(tick);
           return (
             <line
@@ -948,8 +951,12 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
 
         {/* ── Legend (rendered inside SVG for proper export) ── */}
         {settings.legend.show && (() => {
-          const legendY = svgHeight + (settings.legend.marginTop || 0);
-          let curX = padding.left;
+          const legendY = legendIsOverlay
+            ? padding.top + (settings.legend.overlayY ?? 10)
+            : svgHeight + (settings.legend.marginTop || 0);
+          let curX = legendIsOverlay
+            ? padding.left + (settings.legend.overlayX ?? 10)
+            : padding.left;
           const swW = settings.legend.swatchWidth;
           const swH = settings.legend.swatchHeight;
           const gap = settings.legend.swatchPadding || 8;
@@ -962,20 +969,24 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           });
           const totalWidth = itemWidths.reduce((s, w) => s + w, 0) + (legendItems.length - 1) * gap;
 
-          if (settings.legend.alignment === 'center') {
-            curX = (width - totalWidth) / 2;
-          } else if (settings.legend.alignment === 'right') {
-            curX = width - padding.right - totalWidth;
+          if (!legendIsOverlay) {
+            if (settings.legend.alignment === 'center') {
+              curX = (width - totalWidth) / 2;
+            } else if (settings.legend.alignment === 'right') {
+              curX = width - padding.right - totalWidth;
+            }
           }
 
           if (settings.legend.orientation === 'vertical') {
             return legendItems.map((item, idx) => {
               const itemY = legendY + idx * (fontSize + gap);
-              const startX = settings.legend.alignment === 'center'
-                ? width / 2 - (swW + 4 + measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)) / 2
-                : settings.legend.alignment === 'right'
-                  ? width - padding.right - swW - 4 - measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)
-                  : padding.left;
+              const startX = legendIsOverlay
+                ? curX
+                : settings.legend.alignment === 'center'
+                  ? width / 2 - (swW + 4 + measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)) / 2
+                  : settings.legend.alignment === 'right'
+                    ? width - padding.right - swW - 4 - measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)
+                    : padding.left;
               return (
                 <g key={`legend-${idx}`}>
                   <rect

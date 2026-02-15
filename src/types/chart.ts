@@ -194,6 +194,7 @@ export interface NumberFormattingSettings {
 // Legend
 export type LegendAlignment = 'left' | 'center' | 'right' | 'inline';
 export type LegendOrientation = 'horizontal' | 'vertical';
+export type LegendPosition = 'below' | 'overlay';
 export type DataColorsHeader = 'auto' | 'custom' | 'off';
 
 export interface LegendSettings {
@@ -215,6 +216,9 @@ export interface LegendSettings {
   customOrder: string;
   maxWidth: number;
   orientation: LegendOrientation;
+  position: LegendPosition;
+  overlayX: number;
+  overlayY: number;
   dataColorsHeader: DataColorsHeader;
 }
 

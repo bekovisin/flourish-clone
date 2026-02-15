@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { useEditorStore } from '@/store/editorStore';
 import { AccordionSection } from '@/components/settings/AccordionSection';
 import { NumberInput } from '@/components/shared/NumberInput';
@@ -14,6 +15,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import type {
   AxisPosition,
   ScaleType,
@@ -25,6 +28,7 @@ import type {
   TickMarkPosition,
   TickLabelCountMode,
   FontWeight,
+  ChartSettings,
 } from '@/types/chart';
 
 function SubHeader({ children }: { children: React.ReactNode }) {
@@ -162,9 +166,173 @@ function GridlineStylingPanel({ styling, onChange }: GridlineStylingPanelProps) 
   );
 }
 
+// ── Tick generation helpers (mirrors CustomBarChart logic) ──
+function generateNiceTicks(min: number, max: number, desiredCount = 5): number[] {
+  if (max <= min) return [0];
+  const range = max - min;
+  const roughStep = range / desiredCount;
+  const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  let step: number;
+  const normalized = roughStep / mag;
+  if (normalized <= 1.5) step = 1 * mag;
+  else if (normalized <= 3) step = 2 * mag;
+  else if (normalized <= 7) step = 5 * mag;
+  else step = 10 * mag;
+  const niceMin = Math.floor(min / step) * step;
+  const niceMax = Math.ceil(max / step) * step;
+  const ticks: number[] = [];
+  for (let v = niceMin; v <= niceMax + step * 0.001; v += step) {
+    ticks.push(Math.round(v * 1e10) / 1e10);
+  }
+  return ticks;
+}
+
+function generateCustomStepTicks(min: number, max: number, step: number): number[] {
+  if (step <= 0 || max <= min) return [0];
+  const niceMin = Math.floor(min / step) * step;
+  const ticks: number[] = [];
+  for (let v = niceMin; v <= max + step * 0.001; v += step) {
+    ticks.push(Math.round(v * 1e10) / 1e10);
+  }
+  return ticks;
+}
+
+function formatNumberForLabel(value: number, nf: ChartSettings['numberFormatting']): string {
+  const factor = Math.pow(10, nf.decimalPlaces);
+  const rounded = Math.round(value * factor) / factor;
+  let str = rounded.toFixed(nf.decimalPlaces);
+  const [intPart, decPart] = str.split('.');
+  let formattedInt = intPart;
+  if (nf.thousandsSeparator !== 'none') {
+    formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, nf.thousandsSeparator);
+  }
+  str = decPart ? `${formattedInt}${nf.decimalSeparator}${decPart}` : formattedInt;
+  return `${nf.prefix}${str}${nf.suffix}`;
+}
+
+// ── Multi-select dropdown for label visibility ──
+function LabelVisibilityDropdown({
+  allLabels,
+  hiddenLabels,
+  onChange,
+}: {
+  allLabels: string[];
+  hiddenLabels: string[];
+  onChange: (hidden: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const hiddenSet = new Set(hiddenLabels);
+  const visibleCount = allLabels.length - hiddenSet.size;
+
+  const toggleLabel = (label: string) => {
+    const newSet = new Set(hiddenSet);
+    if (newSet.has(label)) {
+      newSet.delete(label);
+    } else {
+      newSet.add(label);
+    }
+    onChange(Array.from(newSet));
+  };
+
+  const showAll = () => onChange([]);
+  const hideAll = () => onChange([...allLabels]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center justify-between w-full h-8 px-3 rounded-md border border-gray-200 bg-white text-xs hover:bg-gray-50 transition-colors">
+          <span className="text-gray-700 truncate">
+            {visibleCount === allLabels.length
+              ? 'All labels visible'
+              : visibleCount === 0
+                ? 'All labels hidden'
+                : `${visibleCount} of ${allLabels.length} visible`}
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0 ml-1" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-0" align="start" side="bottom">
+        {/* Bulk actions */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+          <button
+            onClick={showAll}
+            className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Show all
+          </button>
+          <button
+            onClick={hideAll}
+            className="text-[10px] text-gray-500 hover:text-gray-700 font-medium"
+          >
+            Hide all
+          </button>
+        </div>
+        <div className="max-h-48 overflow-y-auto py-1">
+          {allLabels.map((label) => {
+            const isHidden = hiddenSet.has(label);
+            return (
+              <button
+                key={label}
+                onClick={() => toggleLabel(label)}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors ${
+                  isHidden ? 'text-gray-400' : 'text-gray-700'
+                }`}
+              >
+                {isHidden ? (
+                  <EyeOff className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                ) : (
+                  <Eye className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                )}
+                <span className={`truncate ${isHidden ? 'line-through' : ''}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function XAxisSection() {
   const settings = useEditorStore((s) => s.settings.xAxis);
+  const numberFormatting = useEditorStore((s) => s.settings.numberFormatting);
+  const chartData = useEditorStore((s) => s.data);
+  const columnMapping = useEditorStore((s) => s.columnMapping);
   const updateSettings = useEditorStore((s) => s.updateSettings);
+
+  // Generate all tick labels for the multi-select dropdown
+  const allTickLabels = useMemo(() => {
+    // Compute min/max from data (mirrors CustomBarChart logic)
+    if (!columnMapping.values || columnMapping.values.length === 0) return [];
+    let maxV = 0;
+    let minV = 0;
+    for (let ci = 0; ci < chartData.length; ci++) {
+      let posSum = 0;
+      let negSum = 0;
+      for (const col of columnMapping.values) {
+        const raw = chartData[ci]?.[col];
+        const v = typeof raw === 'number' ? raw : parseFloat(String(raw)) || 0;
+        if (v >= 0) posSum += v;
+        else negSum += v;
+      }
+      if (posSum > maxV) maxV = posSum;
+      if (negSum < minV) minV = negSum;
+    }
+    const userMin = settings.min ? parseFloat(settings.min) : undefined;
+    const userMax = settings.max ? parseFloat(settings.max) : undefined;
+    const finalMax = userMax !== undefined ? userMax : maxV;
+    const finalMin = userMin !== undefined ? userMin : Math.min(0, minV);
+
+    let ticks: number[];
+    if (settings.ticksToShowMode === 'custom') {
+      ticks = generateCustomStepTicks(finalMin, finalMax, settings.tickStep || 10);
+    } else if (settings.ticksToShowMode === 'number') {
+      ticks = generateNiceTicks(finalMin, finalMax, settings.ticksToShowNumber);
+    } else {
+      ticks = generateNiceTicks(finalMin, finalMax);
+    }
+    return ticks.map((t) => formatNumberForLabel(t, numberFormatting));
+  }, [chartData, columnMapping, settings.min, settings.max, settings.ticksToShowMode, settings.ticksToShowNumber, settings.tickStep, numberFormatting]);
 
   const update = (updates: Partial<XAxisSettings>) => {
     updateSettings('xAxis', updates);
@@ -527,7 +695,7 @@ export function XAxisSection() {
       {/* LABEL COUNT */}
       <SubHeader>Label Visibility</SubHeader>
       <p className="text-[10px] text-gray-400 -mt-1 mb-2">
-        Control how many tick labels are visible.
+        Control how many tick labels are visible and toggle individual labels.
       </p>
 
       <SettingRow label="Mode">
@@ -540,7 +708,7 @@ export function XAxisSection() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">All</SelectItem>
-            <SelectItem value="custom" className="text-xs">Custom</SelectItem>
+            <SelectItem value="custom" className="text-xs">Custom count</SelectItem>
           </SelectContent>
         </Select>
       </SettingRow>
@@ -554,6 +722,17 @@ export function XAxisSection() {
           max={100}
           step={1}
         />
+      )}
+
+      {/* Individual label toggle */}
+      {allTickLabels.length > 0 && (
+        <SettingRow label="Toggle labels">
+          <LabelVisibilityDropdown
+            allLabels={allTickLabels}
+            hiddenLabels={settings.hiddenTickLabels || []}
+            onChange={(hidden) => update({ hiddenTickLabels: hidden })}
+          />
+        </SettingRow>
       )}
 
       {/* LAST LABEL PADDING */}

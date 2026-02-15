@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useEditorStore, PreviewDevice } from '@/store/editorStore';
-import { Monitor, Tablet, Smartphone, Maximize2, Settings2 } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Maximize2, Settings2, Paintbrush } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 const devices: { id: PreviewDevice; icon: React.ReactNode; label: string }[] = [
   { id: 'fullscreen', icon: <Maximize2 className="w-4 h-4" />, label: 'Fullscreen' },
@@ -119,6 +121,8 @@ export function ResponsiveToolbar() {
     customPreviewWidth,
     customPreviewHeight,
     setCustomPreviewSize,
+    canvasBackgroundColor,
+    setCanvasBackgroundColor,
     settings,
     updateSettings,
   } = useEditorStore();
@@ -172,6 +176,53 @@ export function ResponsiveToolbar() {
             <span className="text-xs text-gray-400">px</span>
           </div>
         )}
+
+        {/* Canvas background color */}
+        <div className="ml-2 border-l border-gray-200 pl-2">
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 h-8 px-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                    <div
+                      className="w-4 h-4 rounded-sm border border-gray-300"
+                      style={{ backgroundColor: canvasBackgroundColor }}
+                    />
+                    <Paintbrush className="w-3.5 h-3.5" />
+                  </button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                Canvas background
+              </TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-auto p-3" align="end" side="bottom">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-600">Canvas Background</p>
+                <p className="text-[10px] text-gray-400 -mt-2">Cosmetic only — does not affect exports</p>
+                <HexColorPicker
+                  color={canvasBackgroundColor}
+                  onChange={setCanvasBackgroundColor}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">#</span>
+                  <HexColorInput
+                    color={canvasBackgroundColor}
+                    onChange={setCanvasBackgroundColor}
+                    className="flex h-8 w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    prefixed={false}
+                  />
+                </div>
+                <button
+                  onClick={() => setCanvasBackgroundColor('#d1d5db')}
+                  className="text-[10px] text-blue-600 hover:text-blue-700"
+                >
+                  Reset to default
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -20,7 +20,7 @@ export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartAreaRef = useRef<HTMLDivElement>(null);
   const [chartAreaWidth, setChartAreaWidth] = useState(600);
-  const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab } = useEditorStore();
+  const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab, canvasBackgroundColor } = useEditorStore();
 
   const isCustomChart = settings.chartType.chartType === 'bar_stacked_custom';
 
@@ -65,7 +65,7 @@ export function ChartPreview() {
   const yAxisStyle = settings.yAxis.tickStyling;
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: canvasBackgroundColor }}>
       {/* Toolbar */}
       <div className="flex items-center justify-center py-2 px-4 border-b bg-white">
         <ResponsiveToolbar />
@@ -76,7 +76,7 @@ export function ChartPreview() {
         <div
           ref={chartRef}
           id="chart-container"
-          className="bg-white rounded-lg shadow-sm border transition-all duration-300"
+          className="rounded-lg shadow-sm border transition-all duration-300"
           style={{
             width: previewDevice === 'custom' ? `${customPreviewWidth}px` : deviceWidths[previewDevice],
             height: hasFixedHeight ? `${settings.chartType.standardHeight}px` : 'fit-content',
