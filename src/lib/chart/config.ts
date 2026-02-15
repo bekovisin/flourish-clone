@@ -87,6 +87,7 @@ export const defaultChartSettings: ChartSettings = {
     tickPadding: 0,
     spaceMode: 'auto',
     spaceModeValue: 120,
+    axisLine: { show: true, width: 1, color: '#666666' },
     gridlines: false,
     gridlineStyling: { color: '#e5e5e5', width: 1, dashArray: 0 },
     showGridlineStyling: false,

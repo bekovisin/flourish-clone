@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 export async function exportPdf(
   element: HTMLElement,
   filename: string,
-  options?: { width?: number; height?: number }
+  options?: { width?: number; height?: number; transparent?: boolean }
 ) {
   try {
     let imgData: string;
@@ -22,7 +22,6 @@ export async function exportPdf(
         imgWidth = result.width;
         imgHeight = result.height;
       } else {
-        // Fallback to html-to-image
         const fallback = await htmlToImageFallback(element, options);
         imgData = fallback.dataUrl;
         imgWidth = fallback.width;
@@ -35,14 +34,15 @@ export async function exportPdf(
       imgHeight = fallback.height;
     }
 
+    // PDF page exactly matches image size (no extra padding)
     const isLandscape = imgWidth > imgHeight;
     const pdf = new jsPDF({
       orientation: isLandscape ? 'landscape' : 'portrait',
       unit: 'px',
-      format: [imgWidth + 40, imgHeight + 40],
+      format: [imgWidth, imgHeight],
     });
 
-    pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
     pdf.save(`${filename.replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`);
   } catch (error) {
     console.error('PDF export failed:', error);
@@ -54,20 +54,21 @@ async function htmlToImageFallback(
   element: HTMLElement,
   options?: { width?: number; height?: number }
 ): Promise<{ dataUrl: string; width: number; height: number }> {
+  const targetW = options?.width || element.offsetWidth;
+  const targetH = options?.height || element.offsetHeight;
+
   const dataUrl = await toPng(element, {
     quality: 1,
     pixelRatio: 2,
     backgroundColor: '#ffffff',
+    width: targetW,
+    height: targetH,
   });
-
-  const img = new Image();
-  img.src = dataUrl;
-  await new Promise<void>((resolve) => { img.onload = () => resolve(); });
 
   return {
     dataUrl,
-    width: options?.width || img.width / 2,
-    height: options?.height || img.height / 2,
+    width: targetW,
+    height: targetH,
   };
 }
 

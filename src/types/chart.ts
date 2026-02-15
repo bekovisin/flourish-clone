@@ -148,6 +148,7 @@ export interface YAxisSettings {
   tickPadding: number;
   spaceMode: YAxisSpaceMode;
   spaceModeValue: number;
+  axisLine: AxisLineSettings;
   gridlines: boolean;
   gridlineStyling: { color: string; width: number; dashArray: number };
   showGridlineStyling: boolean;

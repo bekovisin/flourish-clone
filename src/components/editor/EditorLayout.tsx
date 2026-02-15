@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditorStore } from '@/store/editorStore';
 import { defaultChartSettings, defaultData, defaultColumnMapping } from '@/lib/chart/config';
 import { EditorTopBar } from './EditorTopBar';
 import { ChartPreview } from './ChartPreview';
 import { DataEditor } from './DataEditor';
 import { SettingsPanel } from './SettingsPanel';
+import { ExportDialog, ExportOptions } from './ExportDialog';
 
 interface EditorLayoutProps {
   visualizationId: number;
@@ -27,6 +28,8 @@ export function EditorLayout({ visualizationId }: EditorLayoutProps) {
   } = useEditorStore();
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'png' | 'svg' | 'html' | 'pdf'>('png');
 
   // Load visualization on mount
   useEffect(() => {
@@ -100,7 +103,14 @@ export function EditorLayout({ visualizationId }: EditorLayoutProps) {
     };
   }, [isDirty, saveVisualization]);
 
-  const handleExport = async (format: 'png' | 'svg' | 'html' | 'pdf') => {
+  // Open export dialog instead of exporting directly
+  const handleExportRequest = (format: 'png' | 'svg' | 'html' | 'pdf') => {
+    setExportFormat(format);
+    setExportDialogOpen(true);
+  };
+
+  // Actual export with options
+  const handleExport = async (format: 'png' | 'svg' | 'html' | 'pdf', options: ExportOptions) => {
     const { exportPng } = await import('@/lib/export/exportPng');
     const { exportSvg } = await import('@/lib/export/exportSvg');
     const { exportPdf } = await import('@/lib/export/exportPdf');
@@ -111,23 +121,34 @@ export function EditorLayout({ visualizationId }: EditorLayoutProps) {
 
     switch (format) {
       case 'png':
-        await exportPng(container, visualizationName);
+        await exportPng(container, visualizationName, options);
         break;
       case 'svg':
-        await exportSvg(container, visualizationName);
+        await exportSvg(container, visualizationName, options);
         break;
       case 'pdf':
-        await exportPdf(container, visualizationName);
+        await exportPdf(container, visualizationName, options);
         break;
       case 'html':
-        exportHtml(settings, data, columnMapping, visualizationName);
+        exportHtml(settings, data, columnMapping, visualizationName, options);
         break;
     }
   };
 
+  // Get current chart container dimensions for export dialog defaults
+  const getContainerDimensions = () => {
+    const container = document.getElementById('chart-container');
+    if (container) {
+      return { width: container.offsetWidth, height: container.offsetHeight };
+    }
+    return { width: 800, height: 600 };
+  };
+
+  const dims = getContainerDimensions();
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <EditorTopBar onExport={handleExport} />
+      <EditorTopBar onExport={handleExportRequest} />
       <div className="flex-1 flex overflow-hidden">
         {/* Main content area */}
         <ChartPreview />
@@ -136,6 +157,15 @@ export function EditorLayout({ visualizationId }: EditorLayoutProps) {
         {/* Settings panel (only shown in preview tab) */}
         {activeTab === 'preview' && <SettingsPanel />}
       </div>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        format={exportFormat}
+        onExport={handleExport}
+        defaultWidth={dims.width}
+        defaultHeight={dims.height}
+      />
     </div>
   );
 }

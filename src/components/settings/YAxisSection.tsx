@@ -311,6 +311,51 @@ export function YAxisSection() {
         </Select>
       </SettingRow>
 
+      {/* ---- AXIS LINE ---- */}
+      <div className="pt-2 border-t border-gray-100">
+        <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+          Axis line
+        </Label>
+      </div>
+
+      <SettingRow label="Show axis line" variant="inline">
+        <Switch
+          checked={settings.axisLine?.show ?? true}
+          onCheckedChange={(v) =>
+            update({
+              axisLine: { ...(settings.axisLine || { show: true, width: 1, color: '#666666' }), show: v },
+            })
+          }
+        />
+      </SettingRow>
+
+      {settings.axisLine?.show !== false && (
+        <>
+          <ColorPicker
+            label="Color"
+            value={settings.axisLine?.color || '#666666'}
+            onChange={(v) =>
+              update({
+                axisLine: { ...(settings.axisLine || { show: true, width: 1, color: '#666666' }), color: v },
+              })
+            }
+          />
+          <NumberInput
+            label="Width"
+            value={settings.axisLine?.width || 1}
+            onChange={(v) =>
+              update({
+                axisLine: { ...(settings.axisLine || { show: true, width: 1, color: '#666666' }), width: v },
+              })
+            }
+            min={0.5}
+            max={5}
+            step={0.5}
+            suffix="px"
+          />
+        </>
+      )}
+
       {/* ---- GRIDLINES ---- */}
       <div className="pt-2 border-t border-gray-100">
         <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">

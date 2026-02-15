@@ -109,14 +109,19 @@ function wrapText(text: string, maxWidth: number, fontSize: number, fontFamily: 
     }
   }
   if (currentLine) lines.push(currentLine);
-  // Max 2 lines: second line truncated if needed
+  // Max 2 lines: both lines truncated if they exceed maxWidth
   if (lines.length > 2) {
+    const remainingText = lines.slice(1).join(' ');
     lines.length = 2;
-    lines[1] = truncateText(lines.slice(1).join(' '), maxWidth, fontSize, fontFamily, fontWeight);
-  } else if (lines.length === 2) {
-    lines[1] = truncateText(lines[1], maxWidth, fontSize, fontFamily, fontWeight);
+    lines[0] = truncateText(lines[0], maxWidth, fontSize, fontFamily, fontWeight);
+    lines[1] = truncateText(remainingText, maxWidth, fontSize, fontFamily, fontWeight);
+  } else {
+    // Truncate each line individually
+    for (let i = 0; i < lines.length; i++) {
+      lines[i] = truncateText(lines[i], maxWidth, fontSize, fontFamily, fontWeight);
+    }
   }
-  return lines.length > 0 ? lines : [text];
+  return lines.length > 0 ? lines : [truncateText(text, maxWidth, fontSize, fontFamily, fontWeight)];
 }
 
 function generateNiceTicks(min: number, max: number, desiredCount: number = 5): number[] {
@@ -438,6 +443,23 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           );
         })}
 
+        {/* ── Y axis line ── */}
+        {settings.yAxis.axisLine?.show && !yAxisHidden && (() => {
+          const yLineX = yAxisRight
+            ? padding.left + plotWidth
+            : padding.left;
+          return (
+            <line
+              x1={yLineX}
+              y1={padding.top}
+              x2={yLineX}
+              y2={padding.top + categories.length * categoryHeight}
+              stroke={settings.yAxis.axisLine.color}
+              strokeWidth={settings.yAxis.axisLine.width}
+            />
+          );
+        })()}
+
         {/* ── X axis line ── */}
         {axisLineShow && (
           <line
@@ -602,8 +624,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   key={`label-${ci}-${si}`}
                   x={labelX + offsetX}
                   y={barY + actualBarH / 2 + offsetY}
+                  dy="0.35em"
                   textAnchor={anchor}
-                  dominantBaseline="central"
                   style={{
                     fontSize: settings.labels.dataPointFontSize,
                     fontFamily: settings.labels.dataPointFontFamily,
@@ -632,8 +654,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                 key={`stack-label-${ci}`}
                 x={padding.left + xScale(Math.max(0, minVal)) + totalBarW + 6}
                 y={barY + barHeight / 2}
+                dy="0.35em"
                 textAnchor="start"
-                dominantBaseline="central"
                 style={{
                   fontSize: settings.labels.dataPointFontSize,
                   fontFamily: settings.labels.dataPointFontFamily,
@@ -692,7 +714,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     x={labelX}
                     y={barY + barHeight / 2}
                     textAnchor="start"
-                    dominantBaseline="central"
+                    dy="0.35em"
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
@@ -736,7 +758,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     x={labelX}
                     y={barY + barHeight / 2}
                     textAnchor="end"
-                    dominantBaseline="central"
+                    dy="0.35em"
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
@@ -820,7 +842,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   <text
                     x={startX + swW + 4}
                     y={itemY + swH / 2}
-                    dominantBaseline="central"
+                    dy="0.35em"
                     style={{
                       fontSize,
                       fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
