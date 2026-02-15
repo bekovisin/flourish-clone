@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/store/editorStore';
 import { buildChartData } from '@/lib/chart/mapSettingsToApex';
 import { ResponsiveToolbar } from './ResponsiveToolbar';
+import { CustomBarChart } from '@/components/chart/CustomBarChart';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -17,7 +18,24 @@ const deviceWidths: Record<string, string> = {
 
 export function ChartPreview() {
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
+  const [chartAreaWidth, setChartAreaWidth] = useState(600);
   const { settings, data, columnMapping, previewDevice, customPreviewWidth, activeTab } = useEditorStore();
+
+  const isCustomChart = settings.chartType.chartType === 'bar_stacked_custom';
+
+  // Measure chart area width for custom SVG chart
+  useEffect(() => {
+    if (!isCustomChart || !chartAreaRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setChartAreaWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(chartAreaRef.current);
+    setChartAreaWidth(chartAreaRef.current.clientWidth);
+    return () => observer.disconnect();
+  }, [isCustomChart]);
 
   const { series, options, autoHeight, isAboveBars, categories } = useMemo(
     () => buildChartData(data, columnMapping, settings),
@@ -131,12 +149,13 @@ export function ChartPreview() {
 
           {/* Chart area with layout padding */}
           <div
+            ref={chartAreaRef}
             className={hasFixedHeight ? 'flex-1 min-h-0' : ''}
             style={{
-              paddingTop: settings.layout.paddingTop,
-              paddingRight: settings.layout.paddingRight,
-              paddingBottom: settings.layout.paddingBottom,
-              paddingLeft: settings.layout.paddingLeft,
+              paddingTop: isCustomChart ? 0 : settings.layout.paddingTop,
+              paddingRight: isCustomChart ? 0 : settings.layout.paddingRight,
+              paddingBottom: isCustomChart ? 0 : settings.layout.paddingBottom,
+              paddingLeft: isCustomChart ? 0 : settings.layout.paddingLeft,
               backgroundColor: settings.plotBackground.backgroundColor,
               border: settings.plotBackground.border
                 ? `${settings.plotBackground.borderWidth}px solid ${settings.plotBackground.borderColor}`
@@ -145,7 +164,16 @@ export function ChartPreview() {
             }}
           >
             <div style={{ width: '100%', height: hasFixedHeight ? '100%' : undefined }}>
-              {series.length > 0 ? (
+              {isCustomChart ? (
+                /* ── Custom SVG Bar Chart ── */
+                <CustomBarChart
+                  data={data}
+                  columnMapping={columnMapping}
+                  settings={settings}
+                  width={chartAreaWidth}
+                  height={hasFixedHeight ? undefined : undefined}
+                />
+              ) : series.length > 0 ? (
                 isAboveBars ? (
                   <div>
                     {categories.map((cat, i) => {

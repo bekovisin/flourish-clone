@@ -22,6 +22,7 @@ import type {
 
 const chartTypeOptions: { value: ChartType; label: string }[] = [
   { value: 'bar_stacked', label: 'Bar chart (stacked)' },
+  { value: 'bar_stacked_custom', label: 'Bar chart stacked (custom)' },
   { value: 'bar_grouped', label: 'Bar chart (grouped)' },
   { value: 'bar_stacked_100', label: 'Bar chart (stacked 100%)' },
   { value: 'column_stacked', label: 'Column chart (stacked)' },
