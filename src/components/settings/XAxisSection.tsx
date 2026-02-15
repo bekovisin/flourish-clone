@@ -36,6 +36,8 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 }
 
 const fontFamilyOptions = [
+  'Inter, sans-serif',
+  'Roboto, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',
@@ -326,7 +328,7 @@ export function XAxisSection() {
       {/* TICKS TO SHOW */}
       <SubHeader>Ticks to show</SubHeader>
       <p className="text-[10px] text-gray-400 -mt-1 mb-2">
-        Determines how the tick values are chosen. &quot;Auto&quot; mode chooses the ticks automatically. &quot;Number&quot; mode lets you specify how many ticks are drawn.
+        &quot;Auto&quot; picks nice tick intervals automatically. &quot;Custom&quot; lets you set a specific step interval between ticks.
       </p>
 
       <SettingRow label="Mode">
@@ -339,18 +341,18 @@ export function XAxisSection() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="auto" className="text-xs">Auto</SelectItem>
-            <SelectItem value="number" className="text-xs">Number</SelectItem>
+            <SelectItem value="custom" className="text-xs">Custom step</SelectItem>
           </SelectContent>
         </Select>
       </SettingRow>
 
-      {settings.ticksToShowMode === 'number' && (
+      {settings.ticksToShowMode === 'custom' && (
         <NumberInput
-          label="Number of ticks"
-          value={settings.ticksToShowNumber}
-          onChange={(v) => update({ ticksToShowNumber: v })}
-          min={2}
-          max={50}
+          label="Step interval"
+          value={settings.tickStep ?? 10}
+          onChange={(v) => update({ tickStep: v })}
+          min={1}
+          max={10000}
           step={1}
         />
       )}

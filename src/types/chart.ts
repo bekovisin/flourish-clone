@@ -83,7 +83,7 @@ export type YAxisPosition = 'left' | 'right' | 'hidden';
 export type ScaleType = 'linear' | 'log';
 export type AxisTitleType = 'auto' | 'custom';
 export type TickPosition = 'default' | 'left' | 'right';
-export type TicksToShowMode = 'auto' | 'number';
+export type TicksToShowMode = 'auto' | 'number' | 'custom';
 export type TickMarkPosition = 'outside' | 'inside' | 'cross';
 
 export interface AxisStyling {
@@ -124,6 +124,7 @@ export interface XAxisSettings {
   tickAngle: number;
   ticksToShowMode: TicksToShowMode;
   ticksToShowNumber: number;
+  tickStep: number;
   tickMarks: TickMarksSettings;
   axisLine: AxisLineSettings;
   gridlines: boolean;

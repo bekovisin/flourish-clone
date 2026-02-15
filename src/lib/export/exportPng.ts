@@ -3,7 +3,7 @@ import { toPng } from 'html-to-image';
 export async function exportPng(
   element: HTMLElement,
   filename: string,
-  options?: { width?: number; height?: number; transparent?: boolean }
+  options?: { width?: number; height?: number; transparent?: boolean; pixelRatio?: number }
 ) {
   try {
     // Check if we have an inline SVG (custom chart) — render via Canvas for best quality
@@ -23,7 +23,7 @@ export async function exportPng(
     // Fallback: html-to-image for ApexCharts
     const dataUrl = await toPng(element, {
       quality: 1,
-      pixelRatio: 2,
+      pixelRatio: options?.pixelRatio || 2,
       backgroundColor: options?.transparent ? undefined : '#ffffff',
       width: options?.width,
       height: options?.height,
@@ -52,7 +52,7 @@ export async function exportPng(
  */
 async function svgToCanvas(
   svgElement: SVGSVGElement,
-  options?: { width?: number; height?: number; transparent?: boolean }
+  options?: { width?: number; height?: number; transparent?: boolean; pixelRatio?: number }
 ): Promise<string | null> {
   try {
     const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
@@ -84,7 +84,7 @@ async function svgToCanvas(
     return new Promise<string>((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        const pixelRatio = 2;
+        const pixelRatio = options?.pixelRatio || 2;
         const canvas = document.createElement('canvas');
         canvas.width = targetW * pixelRatio;
         canvas.height = targetH * pixelRatio;

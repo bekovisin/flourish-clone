@@ -51,7 +51,10 @@ function resolveColors(colorsSettings: ChartSettings['colors'], seriesNames: str
 }
 
 function formatNumber(value: number, nf: ChartSettings['numberFormatting']): string {
-  let str = value.toFixed(nf.decimalPlaces);
+  // Round: >=0.5 fractional part rounds up, <0.5 rounds down
+  const factor = Math.pow(10, nf.decimalPlaces);
+  const rounded = Math.round(value * factor) / factor;
+  let str = rounded.toFixed(nf.decimalPlaces);
   const [intPart, decPart] = str.split('.');
   let formattedInt = intPart;
   if (nf.thousandsSeparator !== 'none') {
@@ -140,6 +143,16 @@ function generateNiceTicks(min: number, max: number, desiredCount: number = 5): 
   const niceMax = Math.ceil(max / step) * step;
   const ticks: number[] = [];
   for (let v = niceMin; v <= niceMax + step * 0.001; v += step) {
+    ticks.push(Math.round(v * 1e10) / 1e10);
+  }
+  return ticks;
+}
+
+function generateCustomStepTicks(min: number, max: number, step: number): number[] {
+  if (step <= 0 || max <= min) return [0];
+  const niceMin = Math.floor(min / step) * step;
+  const ticks: number[] = [];
+  for (let v = niceMin; v <= max + step * 0.001; v += step) {
     ticks.push(Math.round(v * 1e10) / 1e10);
   }
   return ticks;
@@ -265,10 +278,21 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
     return maxW + 10;
   }, [categories, yAxisHidden, settings.yAxis.spaceMode, settings.yAxis.spaceModeValue, yTickStyle]);
 
-  // X-axis tick generation
+  // X-axis tick generation with custom step support
   const xTicks = useMemo(() => {
+    if (settings.xAxis.ticksToShowMode === 'custom') {
+      const step = settings.xAxis.tickStep || 10;
+      return generateCustomStepTicks(minVal, maxVal, step);
+    }
+    if (settings.xAxis.ticksToShowMode === 'number') {
+      return generateNiceTicks(minVal, maxVal, settings.xAxis.ticksToShowNumber);
+    }
     return generateNiceTicks(minVal, maxVal);
-  }, [minVal, maxVal]);
+  }, [minVal, maxVal, settings.xAxis.ticksToShowMode, settings.xAxis.ticksToShowNumber, settings.xAxis.tickStep]);
+
+  // X axis tick angle computations
+  const tickAngle = settings.xAxis.tickAngle || 0;
+  const hasAngle = tickAngle !== 0;
 
   // Measure first and last tick labels to compute edge padding
   const xTickEdgePadding = useMemo(() => {
@@ -277,10 +301,35 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
     const lastLabel = formatNumber(xTicks[xTicks.length - 1], settings.numberFormatting);
     const firstW = measureTextWidth(firstLabel, xTickStyle.fontSize, xTickStyle.fontFamily, xTickStyle.fontWeight);
     const lastW = measureTextWidth(lastLabel, xTickStyle.fontSize, xTickStyle.fontFamily, xTickStyle.fontWeight);
-    return { left: Math.ceil(firstW / 2) + 2, right: Math.ceil(lastW / 2) + 2 };
-  }, [xTicks, xAxisHidden, xTickStyle, settings.numberFormatting]);
 
-  const xAxisHeight = xAxisHidden ? 0 : xTickStyle.fontSize + 20;
+    if (hasAngle) {
+      // With angled labels, we need more padding based on text width and angle
+      const rad = Math.abs(tickAngle) * (Math.PI / 180);
+      const cosA = Math.cos(rad);
+      const sinA = Math.sin(rad);
+      const h = xTickStyle.fontSize;
+      const effectiveFirst = firstW * cosA + h * sinA;
+      const effectiveLast = lastW * cosA + h * sinA;
+      return { left: Math.ceil(effectiveFirst / 2) + 4, right: Math.ceil(effectiveLast / 2) + 4 };
+    }
+
+    return { left: Math.ceil(firstW / 2) + 2, right: Math.ceil(lastW / 2) + 2 };
+  }, [xTicks, xAxisHidden, xTickStyle, settings.numberFormatting, hasAngle, tickAngle]);
+
+  // X axis height depends on angle
+  const xAxisHeight = useMemo(() => {
+    if (xAxisHidden) return 0;
+    if (!hasAngle) return xTickStyle.fontSize + 20;
+    // Angled: compute height based on longest tick label and angle
+    const maxLabel = xTicks.reduce((longest, tick) => {
+      const label = formatNumber(tick, settings.numberFormatting);
+      return label.length > longest.length ? label : longest;
+    }, '');
+    const maxW = measureTextWidth(maxLabel, xTickStyle.fontSize, xTickStyle.fontFamily, xTickStyle.fontWeight);
+    const rad = Math.abs(tickAngle) * (Math.PI / 180);
+    return Math.ceil(maxW * Math.sin(rad) + xTickStyle.fontSize * Math.cos(rad)) + 20;
+  }, [xAxisHidden, hasAngle, tickAngle, xTicks, xTickStyle, settings.numberFormatting]);
+
   const xAxisTitleHeight = settings.xAxis.titleType === 'custom' && settings.xAxis.titleText ? settings.xAxis.titleStyling.fontSize + 10 : 0;
   const yAxisTitleWidth = settings.yAxis.titleType === 'custom' && settings.yAxis.titleText ? settings.yAxis.titleStyling.fontSize + 10 : 0;
   const tickPadding = settings.yAxis.tickPadding || 0;
@@ -366,6 +415,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   // X axis line & tick marks
   const axisLineShow = settings.xAxis.axisLine.show && !xAxisHidden;
   const tickMarksShow = settings.xAxis.tickMarks.show && !xAxisHidden;
+  const tickMarkPosition = settings.xAxis.tickMarks.position;
 
   // Legend data
   const legendItems = series.map((s) => ({ name: s.name, color: s.color }));
@@ -385,6 +435,25 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   const legendHeight = settings.legend.show ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
   const totalSvgHeight = svgHeight + legendHeight;
 
+  // Background color - use layout bg, or transparent ('none') if not set
+  const bgColor = settings.layout.backgroundColor || 'transparent';
+
+  // Tick mark positioning helpers
+  const getTickMarkY1Y2 = (baseY: number, dir: number, length: number) => {
+    if (tickMarkPosition === 'outside') {
+      return { y1: baseY, y2: baseY + dir * length };
+    } else if (tickMarkPosition === 'inside') {
+      return { y1: baseY, y2: baseY - dir * length };
+    } else {
+      // cross
+      return { y1: baseY - dir * (length / 2), y2: baseY + dir * (length / 2) };
+    }
+  };
+
+  // Zero-value Y line position
+  const zeroX = xScale(0);
+  const hasZeroInRange = minVal <= 0 && maxVal >= 0;
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <svg
@@ -395,8 +464,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
       >
-        {/* Background for export */}
-        <rect x="0" y="0" width={width} height={totalSvgHeight} fill={settings.layout.backgroundColor || '#ffffff'} />
+        {/* Background for export - uses layout background color */}
+        <rect x="0" y="0" width={width} height={totalSvgHeight} fill={bgColor === 'transparent' ? 'none' : bgColor} />
 
         {/* Plot background */}
         {settings.plotBackground.backgroundColor && settings.plotBackground.backgroundColor !== 'transparent' && (
@@ -444,7 +513,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         })}
 
         {/* ── Y axis line ── */}
-        {settings.yAxis.axisLine?.show && !yAxisHidden && (() => {
+        {settings.yAxis.axisLine?.show && (() => {
+          // Y axis line at the plot left/right edge (or at zero if 0 is in range)
           const yLineX = yAxisRight
             ? padding.left + plotWidth
             : padding.left;
@@ -459,6 +529,19 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
             />
           );
         })()}
+
+        {/* ── Zero-value Y line (at value=0 on x axis) ── */}
+        {hasZeroInRange && settings.yAxis.axisLine?.show && zeroX > 0 && zeroX < plotWidth && (
+          <line
+            x1={padding.left + zeroX}
+            y1={padding.top}
+            x2={padding.left + zeroX}
+            y2={padding.top + categories.length * categoryHeight}
+            stroke={settings.yAxis.axisLine.color}
+            strokeWidth={settings.yAxis.axisLine.width}
+            opacity={0.5}
+          />
+        )}
 
         {/* ── X axis line ── */}
         {axisLineShow && (
@@ -475,26 +558,33 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         {/* ── X axis ticks & labels ── */}
         {!xAxisHidden && xTicks.map((tick) => {
           const x = padding.left + xScale(tick);
+          const tickLen = settings.xAxis.tickMarks.length;
+          const { y1: tmY1, y2: tmY2 } = getTickMarkY1Y2(xAxisYPos, xAxisTickDir, tickLen);
+
+          // Label position: for angled labels, adjust anchor and position
+          const labelText = formatNumber(tick, settings.numberFormatting);
+          const labelY = xAxisOnTop
+            ? xAxisYPos - (tickMarksShow ? tickLen : 0) - 6
+            : xAxisYPos + (tickMarksShow ? tickLen : 0) + xTickStyle.fontSize + 4;
+
           return (
             <g key={`xtick-${tick}`}>
               {tickMarksShow && (
                 <line
                   x1={x}
-                  y1={xAxisYPos}
+                  y1={tmY1}
                   x2={x}
-                  y2={xAxisYPos + xAxisTickDir * settings.xAxis.tickMarks.length}
+                  y2={tmY2}
                   stroke={settings.xAxis.tickMarks.color}
                   strokeWidth={settings.xAxis.tickMarks.width}
                 />
               )}
               <text
                 x={x}
-                y={xAxisOnTop
-                  ? xAxisYPos - (tickMarksShow ? settings.xAxis.tickMarks.length : 0) - 6
-                  : xAxisYPos + (tickMarksShow ? settings.xAxis.tickMarks.length : 0) + xTickStyle.fontSize + 4
-                }
-                textAnchor="middle"
-                dominantBaseline={xAxisOnTop ? 'auto' : 'auto'}
+                y={hasAngle ? xAxisYPos + (xAxisOnTop ? -1 : 1) * ((tickMarksShow ? tickLen : 0) + 4) : labelY}
+                textAnchor={hasAngle ? (tickAngle > 0 ? 'start' : 'end') : 'middle'}
+                dominantBaseline={hasAngle ? (xAxisOnTop ? 'auto' : 'hanging') : 'auto'}
+                transform={hasAngle ? `rotate(${tickAngle}, ${x}, ${xAxisYPos + (xAxisOnTop ? -1 : 1) * ((tickMarksShow ? tickLen : 0) + 4)})` : undefined}
                 style={{
                   fontSize: xTickStyle.fontSize,
                   fontFamily: xTickStyle.fontFamily,
@@ -502,7 +592,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   fill: xTickStyle.color,
                 }}
               >
-                {formatNumber(tick, settings.numberFormatting)}
+                {labelText}
               </text>
             </g>
           );
@@ -873,7 +963,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                 <text
                   x={x + swW + 4}
                   y={legendY + swH / 2}
-                  dominantBaseline="central"
+                  dy="0.35em"
                   style={{
                     fontSize,
                     fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',

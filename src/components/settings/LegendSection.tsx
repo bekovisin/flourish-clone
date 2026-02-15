@@ -32,6 +32,7 @@ const alignmentOptions: { value: LegendAlignment; label: string }[] = [
 
 const fontFamilyOptions = [
   'Inter, sans-serif',
+  'Roboto, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',

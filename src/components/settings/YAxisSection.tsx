@@ -19,6 +19,7 @@ import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition, YAxisSpaceM
 
 const fontFamilyOptions = [
   'Inter, sans-serif',
+  'Roboto, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',

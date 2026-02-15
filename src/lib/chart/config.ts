@@ -66,6 +66,7 @@ export const defaultChartSettings: ChartSettings = {
     tickAngle: 0,
     ticksToShowMode: 'auto',
     ticksToShowNumber: 5,
+    tickStep: 10,
     tickMarks: { show: true, position: 'outside', length: 6, width: 1, color: '#666666' },
     axisLine: { show: true, width: 1, color: '#666666' },
     gridlines: true,
@@ -99,7 +100,7 @@ export const defaultChartSettings: ChartSettings = {
     borderWidth: 1,
   },
   numberFormatting: {
-    decimalPlaces: 2,
+    decimalPlaces: 1,
     thousandsSeparator: ',',
     decimalSeparator: '.',
     prefix: '',

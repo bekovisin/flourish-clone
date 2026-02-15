@@ -29,6 +29,7 @@ export interface ExportOptions {
   width?: number;
   height?: number;
   transparent?: boolean;
+  pixelRatio?: number;
 }
 
 const formatIcons: Record<ExportFormat, React.ReactNode> = {
@@ -56,6 +57,7 @@ export function ExportDialog({
   const [width, setWidth] = useState(defaultWidth);
   const [height, setHeight] = useState(defaultHeight);
   const [transparent, setTransparent] = useState(false);
+  const [pixelRatio, setPixelRatio] = useState(2);
   const [isExporting, setIsExporting] = useState(false);
 
   // Reset values when dialog opens
@@ -64,6 +66,7 @@ export function ExportDialog({
       setWidth(Math.round(defaultWidth));
       setHeight(Math.round(defaultHeight));
       setTransparent(false);
+      setPixelRatio(2);
       setIsExporting(false);
     }
   }, [open, defaultWidth, defaultHeight]);
@@ -75,6 +78,7 @@ export function ExportDialog({
         width: width || undefined,
         height: height || undefined,
         transparent,
+        pixelRatio: format === 'png' ? pixelRatio : undefined,
       });
     } finally {
       setIsExporting(false);
@@ -83,6 +87,7 @@ export function ExportDialog({
   };
 
   const supportsTransparency = format === 'png' || format === 'svg';
+  const supportsQuality = format === 'png';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,6 +141,35 @@ export function ExportDialog({
                 checked={transparent}
                 onCheckedChange={setTransparent}
               />
+            </div>
+          )}
+
+          {/* PNG Quality */}
+          {supportsQuality && (
+            <div className="space-y-2">
+              <Label className="text-sm">Quality (pixel ratio)</Label>
+              <div className="flex rounded-md border border-gray-200 overflow-hidden">
+                {[
+                  { value: 1, label: 'x1' },
+                  { value: 2, label: 'x2' },
+                  { value: 3, label: 'x3' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPixelRatio(opt.value)}
+                    className={`flex-1 px-3 py-1.5 text-xs transition-colors ${
+                      pixelRatio === opt.value
+                        ? 'bg-gray-800 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    } ${opt.value !== 1 ? 'border-l border-gray-200' : ''}`}
+                  >
+                    {opt.label}
+                    <span className="text-[10px] ml-1 opacity-60">
+                      {width * opt.value}x{height * opt.value}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
