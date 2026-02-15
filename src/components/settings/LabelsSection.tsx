@@ -32,6 +32,34 @@ function SubHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
+function TabMenu<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex rounded-md border border-gray-200 overflow-hidden w-full">
+      {options.map((opt, i) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`flex-1 px-2 py-1.5 text-xs transition-colors ${
+            value === opt.value
+              ? 'bg-blue-500 text-white font-medium'
+              : 'bg-white text-gray-600 hover:bg-gray-50'
+          } ${i > 0 ? 'border-l border-gray-200' : ''}`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const fontFamilyOptions = [
   'Inter, sans-serif',
   'Roboto, sans-serif',
@@ -59,61 +87,60 @@ export function LabelsSection() {
       {/* BAR LABELS */}
       <SubHeader>Bar Labels</SubHeader>
 
+      {/* Label style - tab menu */}
       <SettingRow label="Label style">
-        <Select
+        <TabMenu
           value={settings.barLabelStyle}
-          onValueChange={(v) => update({ barLabelStyle: v as BarLabelStyle })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="above_bars" className="text-xs">Above bars</SelectItem>
-            <SelectItem value="axis" className="text-xs">Axis</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ barLabelStyle: v as BarLabelStyle })}
+          options={[
+            { value: 'above_bars', label: 'Above bars' },
+            { value: 'axis', label: 'Axis' },
+          ]}
+        />
       </SettingRow>
 
-      {/* Above-bar label padding */}
+      {/* Above-bar label padding - 4 inputs side by side */}
       {settings.barLabelStyle === 'above_bars' && (
-        <div className="space-y-2 pl-2 border-l-2 border-gray-100">
-          <p className="text-[10px] text-gray-400">Above-bar label padding</p>
-          <NumberInput
-            label="Top"
-            value={settings.aboveBarPaddingTop || 0}
-            onChange={(v) => update({ aboveBarPaddingTop: v })}
-            min={-50}
-            max={50}
-            step={1}
-            suffix="px"
-          />
-          <NumberInput
-            label="Right"
-            value={settings.aboveBarPaddingRight || 0}
-            onChange={(v) => update({ aboveBarPaddingRight: v })}
-            min={-50}
-            max={50}
-            step={1}
-            suffix="px"
-          />
-          <NumberInput
-            label="Bottom"
-            value={settings.aboveBarPaddingBottom || 0}
-            onChange={(v) => update({ aboveBarPaddingBottom: v })}
-            min={-50}
-            max={50}
-            step={1}
-            suffix="px"
-          />
-          <NumberInput
-            label="Left"
-            value={settings.aboveBarPaddingLeft || 0}
-            onChange={(v) => update({ aboveBarPaddingLeft: v })}
-            min={-50}
-            max={50}
-            step={1}
-            suffix="px"
-          />
+        <div className="space-y-1.5 pl-2 border-l-2 border-gray-100">
+          <p className="text-[10px] text-gray-400 font-medium">Above-bar label padding</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            <NumberInput
+              label="T"
+              value={settings.aboveBarPaddingTop || 0}
+              onChange={(v) => update({ aboveBarPaddingTop: v })}
+              min={-50}
+              max={50}
+              step={1}
+              suffix="px"
+            />
+            <NumberInput
+              label="R"
+              value={settings.aboveBarPaddingRight || 0}
+              onChange={(v) => update({ aboveBarPaddingRight: v })}
+              min={-50}
+              max={50}
+              step={1}
+              suffix="px"
+            />
+            <NumberInput
+              label="B"
+              value={settings.aboveBarPaddingBottom || 0}
+              onChange={(v) => update({ aboveBarPaddingBottom: v })}
+              min={-50}
+              max={50}
+              step={1}
+              suffix="px"
+            />
+            <NumberInput
+              label="L"
+              value={settings.aboveBarPaddingLeft || 0}
+              onChange={(v) => update({ aboveBarPaddingLeft: v })}
+              min={-50}
+              max={50}
+              step={1}
+              suffix="px"
+            />
+          </div>
         </div>
       )}
 
@@ -129,22 +156,17 @@ export function LabelsSection() {
 
       {settings.showDataPointLabels && (
         <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+          {/* Position - 3-button tab menu */}
           <SettingRow label="Position">
-            <Select
+            <TabMenu
               value={settings.dataPointPosition}
-              onValueChange={(v) =>
-                update({ dataPointPosition: v as DataPointLabelPosition })
-              }
-            >
-              <SelectTrigger className="h-8 text-xs w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="left" className="text-xs">Left</SelectItem>
-                <SelectItem value="center" className="text-xs">Center</SelectItem>
-                <SelectItem value="right" className="text-xs">Right</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(v) => update({ dataPointPosition: v as DataPointLabelPosition })}
+              options={[
+                { value: 'left', label: 'Left' },
+                { value: 'center', label: 'Center' },
+                { value: 'right', label: 'Right' },
+              ]}
+            />
           </SettingRow>
 
           <SettingRow label="Custom padding" variant="inline">
@@ -154,44 +176,47 @@ export function LabelsSection() {
             />
           </SettingRow>
 
+          {/* Custom padding - 4 inputs side by side */}
           {settings.dataPointCustomPadding && (
-            <div className="space-y-2 pl-2 border-l-2 border-gray-100">
-              <NumberInput
-                label="Top"
-                value={settings.dataPointPaddingTop}
-                onChange={(v) => update({ dataPointPaddingTop: v })}
-                min={-50}
-                max={50}
-                step={1}
-                suffix="px"
-              />
-              <NumberInput
-                label="Right"
-                value={settings.dataPointPaddingRight}
-                onChange={(v) => update({ dataPointPaddingRight: v })}
-                min={-50}
-                max={50}
-                step={1}
-                suffix="px"
-              />
-              <NumberInput
-                label="Bottom"
-                value={settings.dataPointPaddingBottom}
-                onChange={(v) => update({ dataPointPaddingBottom: v })}
-                min={-50}
-                max={50}
-                step={1}
-                suffix="px"
-              />
-              <NumberInput
-                label="Left"
-                value={settings.dataPointPaddingLeft}
-                onChange={(v) => update({ dataPointPaddingLeft: v })}
-                min={-50}
-                max={50}
-                step={1}
-                suffix="px"
-              />
+            <div className="space-y-1.5 pl-2 border-l-2 border-gray-100">
+              <div className="grid grid-cols-4 gap-1.5">
+                <NumberInput
+                  label="T"
+                  value={settings.dataPointPaddingTop}
+                  onChange={(v) => update({ dataPointPaddingTop: v })}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  suffix="px"
+                />
+                <NumberInput
+                  label="R"
+                  value={settings.dataPointPaddingRight}
+                  onChange={(v) => update({ dataPointPaddingRight: v })}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  suffix="px"
+                />
+                <NumberInput
+                  label="B"
+                  value={settings.dataPointPaddingBottom}
+                  onChange={(v) => update({ dataPointPaddingBottom: v })}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  suffix="px"
+                />
+                <NumberInput
+                  label="L"
+                  value={settings.dataPointPaddingLeft}
+                  onChange={(v) => update({ dataPointPaddingLeft: v })}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  suffix="px"
+                />
+              </div>
             </div>
           )}
 
@@ -213,62 +238,63 @@ export function LabelsSection() {
             </Select>
           </SettingRow>
 
-          <NumberInput
-            label="Font size"
-            value={settings.dataPointFontSize}
-            onChange={(v) => update({ dataPointFontSize: v })}
-            min={6}
-            max={48}
-            step={1}
-            suffix="px"
-          />
+          {/* Font weight + Font style + Font size - single row */}
+          <div className="space-y-1.5">
+            <span className="text-xs text-gray-600 font-medium">Font styling</span>
+            <div className="grid grid-cols-3 gap-1.5">
+              {/* Font weight */}
+              <Select
+                value={settings.dataPointFontWeight}
+                onValueChange={(v) => update({ dataPointFontWeight: v as FontWeight })}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                  <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
+                  <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Font style */}
+              <Select
+                value={settings.dataPointFontStyle || 'normal'}
+                onValueChange={(v) => update({ dataPointFontStyle: v as 'normal' | 'italic' })}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                  <SelectItem value="italic" className="text-xs">Italic</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Font size */}
+              <NumberInput
+                label=""
+                value={settings.dataPointFontSize}
+                onChange={(v) => update({ dataPointFontSize: v })}
+                min={6}
+                max={48}
+                step={1}
+                suffix="px"
+              />
+            </div>
+          </div>
 
-          <SettingRow label="Font weight">
-            <Select
-              value={settings.dataPointFontWeight}
-              onValueChange={(v) => update({ dataPointFontWeight: v as FontWeight })}
-            >
-              <SelectTrigger className="h-8 text-xs w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
-                <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
-                <SelectItem value="bold" className="text-xs">Bold</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
-          <SettingRow label="Font style">
-            <Select
-              value={settings.dataPointFontStyle || 'normal'}
-              onValueChange={(v) => update({ dataPointFontStyle: v as 'normal' | 'italic' })}
-            >
-              <SelectTrigger className="h-8 text-xs w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
-                <SelectItem value="italic" className="text-xs">Italic</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
+          {/* Color mode - 2-button tab menu */}
           <SettingRow label="Color mode">
-            <Select
+            <TabMenu
               value={settings.dataPointColorMode}
-              onValueChange={(v) => update({ dataPointColorMode: v as DataPointLabelColorMode })}
-            >
-              <SelectTrigger className="h-8 text-xs w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto" className="text-xs">Auto (contrast)</SelectItem>
-                <SelectItem value="custom" className="text-xs">Custom</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(v) => update({ dataPointColorMode: v as DataPointLabelColorMode })}
+              options={[
+                { value: 'auto', label: 'Auto (contrast)' },
+                { value: 'custom', label: 'Custom' },
+              ]}
+            />
           </SettingRow>
 
+          {/* Custom color mode - grid layout */}
           {settings.dataPointColorMode === 'custom' && (
             <div className="space-y-2">
               <ColorPicker
@@ -277,22 +303,26 @@ export function LabelsSection() {
                 onChange={(color) => update({ dataPointColor: color })}
               />
               {seriesNames.length > 0 && (
-                <div className="space-y-2 pl-2 border-l-2 border-gray-100">
-                  {seriesNames.map((name) => (
-                    <ColorPicker
-                      key={name}
-                      label={name}
-                      value={settings.dataPointSeriesColors?.[name] || settings.dataPointColor}
-                      onChange={(color) => {
-                        update({
-                          dataPointSeriesColors: {
-                            ...settings.dataPointSeriesColors,
-                            [name]: color,
-                          },
-                        });
-                      }}
-                    />
-                  ))}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-gray-400 font-medium">Per-series colors</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {seriesNames.map((name) => (
+                      <div key={name} className="space-y-1">
+                        <span className="text-[10px] text-gray-500 truncate block">{name}</span>
+                        <ColorPicker
+                          value={settings.dataPointSeriesColors?.[name] || settings.dataPointColor}
+                          onChange={(color) => {
+                            update({
+                              dataPointSeriesColors: {
+                                ...settings.dataPointSeriesColors,
+                                [name]: color,
+                              },
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -303,20 +333,17 @@ export function LabelsSection() {
       {/* STACK LABELS */}
       <SubHeader>Stack Labels</SubHeader>
 
+      {/* Stack labels - 3-button tab menu */}
       <SettingRow label="Stack labels">
-        <Select
+        <TabMenu
           value={settings.stackLabelMode}
-          onValueChange={(v) => update({ stackLabelMode: v as StackLabelMode })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none" className="text-xs">None</SelectItem>
-            <SelectItem value="net_sum" className="text-xs">Net sum</SelectItem>
-            <SelectItem value="separate" className="text-xs">Separate +/-</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ stackLabelMode: v as StackLabelMode })}
+          options={[
+            { value: 'none', label: 'None' },
+            { value: 'net_sum', label: 'Net sum' },
+            { value: 'separate', label: 'Separate +/-' },
+          ]}
+        />
       </SettingRow>
     </AccordionSection>
   );

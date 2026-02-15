@@ -81,7 +81,19 @@ export function ChartPreview() {
             width: previewDevice === 'custom' ? `${customPreviewWidth}px` : deviceWidths[previewDevice],
             height: hasFixedHeight ? `${settings.chartType.standardHeight}px` : 'fit-content',
             maxWidth: settings.layout.maxWidth > 0 ? settings.layout.maxWidth : undefined,
-            backgroundColor: settings.layout.backgroundColor,
+            backgroundColor: (() => {
+              const bg = settings.layout.backgroundColor;
+              const opacity = settings.layout.backgroundOpacity ?? 100;
+              if (bg === 'transparent' || opacity === 0) return 'transparent';
+              if (opacity < 100 && bg && bg.startsWith('#')) {
+                // Convert hex + opacity to rgba
+                const r = parseInt(bg.slice(1, 3), 16);
+                const g = parseInt(bg.slice(3, 5), 16);
+                const b = parseInt(bg.slice(5, 7), 16);
+                return `rgba(${r},${g},${b},${opacity / 100})`;
+              }
+              return bg;
+            })(),
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -158,7 +170,7 @@ export function ChartPreview() {
               paddingRight: isCustomChart ? 0 : settings.layout.paddingRight,
               paddingBottom: isCustomChart ? 0 : settings.layout.paddingBottom,
               paddingLeft: isCustomChart ? 0 : settings.layout.paddingLeft,
-              backgroundColor: settings.plotBackground.backgroundColor,
+              backgroundColor: isCustomChart ? 'transparent' : settings.plotBackground.backgroundColor,
               border: settings.plotBackground.border
                 ? `${settings.plotBackground.borderWidth}px solid ${settings.plotBackground.borderColor}`
                 : undefined,

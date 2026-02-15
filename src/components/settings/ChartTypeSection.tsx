@@ -30,11 +30,33 @@ const chartTypeOptions: { value: ChartType; label: string }[] = [
   { value: 'column_stacked_100', label: 'Column chart (stacked 100%)' },
 ];
 
-const stackSortOptions: { value: StackSortMode; label: string }[] = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'ascending', label: 'Ascending' },
-  { value: 'descending', label: 'Descending' },
-];
+function TabMenu<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex rounded-md border border-gray-200 overflow-hidden w-full">
+      {options.map((opt, i) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`flex-1 px-2 py-1.5 text-xs transition-colors ${
+            value === opt.value
+              ? 'bg-blue-500 text-white font-medium'
+              : 'bg-white text-gray-600 hover:bg-gray-50'
+          } ${i > 0 ? 'border-l border-gray-200' : ''}`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function ChartTypeSection() {
   const settings = useEditorStore((s) => s.settings.chartType);
@@ -65,56 +87,42 @@ export function ChartTypeSection() {
         </Select>
       </SettingRow>
 
-      {/* Stack Sort Mode - 3-button toggle */}
+      {/* Stack Sort Mode - 3-button tab menu */}
       <SettingRow label="Stack sort mode">
-        <div className="flex rounded-md border border-gray-200 overflow-hidden">
-          {stackSortOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => update({ stackSortMode: opt.value })}
-              className={`px-3 py-1.5 text-xs transition-colors ${
-                settings.stackSortMode === opt.value
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-              } ${opt.value !== 'normal' ? 'border-l border-gray-200' : ''}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <TabMenu
+          value={settings.stackSortMode}
+          onChange={(v) => update({ stackSortMode: v as StackSortMode })}
+          options={[
+            { value: 'normal', label: 'Normal' },
+            { value: 'ascending', label: 'Ascending' },
+            { value: 'descending', label: 'Descending' },
+          ]}
+        />
       </SettingRow>
 
-      {/* Grid Mode */}
+      {/* Grid Mode - 2-button tab menu */}
       <SettingRow label="Grid mode">
-        <Select
+        <TabMenu
           value={settings.gridMode}
-          onValueChange={(v) => update({ gridMode: v as GridMode })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="single" className="text-xs">Single chart</SelectItem>
-            <SelectItem value="grid" className="text-xs">Grid of charts</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ gridMode: v as GridMode })}
+          options={[
+            { value: 'single', label: 'Single chart' },
+            { value: 'grid', label: 'Grid of charts' },
+          ]}
+        />
       </SettingRow>
 
-      {/* Height Mode */}
+      {/* Height Mode - 3-button tab menu */}
       <SettingRow label="Height mode">
-        <Select
+        <TabMenu
           value={settings.heightMode}
-          onValueChange={(v) => update({ heightMode: v as HeightMode })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="auto" className="text-xs">Auto</SelectItem>
-            <SelectItem value="standard" className="text-xs">Standard</SelectItem>
-            <SelectItem value="aspect_ratio" className="text-xs">Aspect ratio</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ heightMode: v as HeightMode })}
+          options={[
+            { value: 'auto', label: 'Auto' },
+            { value: 'standard', label: 'Standard' },
+            { value: 'aspect_ratio', label: 'Aspect ratio' },
+          ]}
+        />
       </SettingRow>
 
       {settings.heightMode === 'standard' && (
@@ -158,21 +166,17 @@ export function ChartTypeSection() {
         </Select>
       </SettingRow>
 
-      {/* Sort Mode */}
+      {/* Sort Mode - 3-button tab menu */}
       <SettingRow label="Sort mode">
-        <Select
+        <TabMenu
           value={settings.sortMode}
-          onValueChange={(v) => update({ sortMode: v as SortMode })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="data_sheet" className="text-xs">Data sheet</SelectItem>
-            <SelectItem value="value" className="text-xs">Value</SelectItem>
-            <SelectItem value="label" className="text-xs">Label</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ sortMode: v as SortMode })}
+          options={[
+            { value: 'data_sheet', label: 'Data sheet' },
+            { value: 'value', label: 'Value' },
+            { value: 'label', label: 'Label' },
+          ]}
+        />
       </SettingRow>
     </AccordionSection>
   );

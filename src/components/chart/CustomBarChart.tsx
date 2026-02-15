@@ -465,9 +465,22 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   // Y-axis label max width for truncation/wrapping
   const yLabelMaxWidth = yAxisLabelWidth - 4;
 
-  // Legend height estimate for SVG export — only add space below when position is 'below'
+  // Legend layout calculations
   const legendIsOverlay = settings.legend.position === 'overlay';
-  const legendHeight = settings.legend.show && !legendIsOverlay ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
+  const legendFontSize = settings.legend.size;
+  const legendGap = settings.legend.swatchPadding || 8;
+
+  // Compute legend height based on orientation
+  const legendHeight = (() => {
+    if (!settings.legend.show || legendIsOverlay) return 0;
+    const marginTop = settings.legend.marginTop || 0;
+    if (settings.legend.orientation === 'vertical') {
+      const itemCount = series.length;
+      return itemCount * (legendFontSize + legendGap) + marginTop + 10;
+    }
+    return legendFontSize + 20 + marginTop;
+  })();
+
   const totalSvgHeight = svgHeight + legendHeight;
 
   // Background color - use layout bg with opacity support
@@ -516,8 +529,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
 
         {/* ── Gridlines ── */}
         {settings.xAxis.gridlines && xTicksAll.map((tick) => {
-          // Skip the zero-position gridline — it's rendered separately by the zero line setting
-          if (tick === 0 && hasZeroInRange) return null;
+          // Skip the zero-position gridline only when zero line is explicitly shown
+          if (tick === 0 && hasZeroInRange && settings.xAxis.zeroLine?.show === true) return null;
           const x = padding.left + xScale(tick);
           return (
             <line
@@ -569,7 +582,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         })()}
 
         {/* ── Zero-value line (at value=0 on x axis) ── */}
-        {hasZeroInRange && settings.xAxis.zeroLine?.show !== false && zeroX > 0 && zeroX < plotWidth && (
+        {hasZeroInRange && settings.xAxis.zeroLine?.show === true && zeroX >= 0 && zeroX <= plotWidth && (
           <line
             x1={padding.left + zeroX}
             y1={padding.top}
@@ -919,7 +932,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
               {isAboveBars && (() => {
                 // When zero line is hidden, align with bar left edge (padding.left)
                 // When zero line is visible, align at zero position
-                const zeroLineVisible = hasZeroInRange && settings.xAxis.zeroLine?.show !== false;
+                const zeroLineVisible = hasZeroInRange && settings.xAxis.zeroLine?.show === true;
                 const aboveLabelX = zeroLineVisible
                   ? padding.left + xScale(0)
                   : padding.left;

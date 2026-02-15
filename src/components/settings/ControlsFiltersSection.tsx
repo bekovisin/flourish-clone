@@ -21,6 +21,34 @@ const controlPositionLabels: Record<ControlPosition, string> = {
   bottom_right: 'Bottom right',
 };
 
+function TabMenu<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex rounded-md border border-gray-200 overflow-hidden w-full">
+      {options.map((opt, i) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`flex-1 px-2 py-1.5 text-xs transition-colors ${
+            value === opt.value
+              ? 'bg-blue-500 text-white font-medium'
+              : 'bg-white text-gray-600 hover:bg-gray-50'
+          } ${i > 0 ? 'border-l border-gray-200' : ''}`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ControlsFiltersSection() {
   const settings = useEditorStore((s) => s.settings.controlsFilters);
   const updateSettings = useEditorStore((s) => s.updateSettings);
@@ -31,30 +59,26 @@ export function ControlsFiltersSection() {
 
   return (
     <AccordionSection id="controls-filters" title="Controls & filters">
-      {/* Series Filter */}
+      {/* Series Filter - 3-button tab menu */}
       <SettingRow label="Series filter">
-        <Select
+        <TabMenu
           value={settings.seriesFilter}
-          onValueChange={(v) => update({ seriesFilter: v as FilterMode })}
-        >
-          <SelectTrigger className="h-8 text-xs w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="off" className="text-xs">Off</SelectItem>
-            <SelectItem value="single_select" className="text-xs">Single select</SelectItem>
-            <SelectItem value="multi_select" className="text-xs">Multi select</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(v) => update({ seriesFilter: v as FilterMode })}
+          options={[
+            { value: 'off', label: 'Off' },
+            { value: 'single_select', label: 'Single' },
+            { value: 'multi_select', label: 'Multi' },
+          ]}
+        />
       </SettingRow>
 
-      {/* Max Series to Show */}
+      {/* Max Series to Show - smaller input */}
       <NumberInput
         label="Max series to show"
         value={settings.maxSeriesToShow}
         onChange={(v) => update({ maxSeriesToShow: v })}
         min={1}
-        max={100}
+        max={99999}
       />
 
       {/* Filter Rows with No Data */}
