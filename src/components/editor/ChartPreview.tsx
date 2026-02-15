@@ -24,18 +24,20 @@ export function ChartPreview() {
 
   const isCustomChart = settings.chartType.chartType === 'bar_stacked_custom';
 
-  // Measure chart area width for custom SVG chart
+  // Measure chart area width — always observe so width is ready when switching tabs/chart types
   useEffect(() => {
-    if (!isCustomChart || !chartAreaRef.current) return;
+    if (!chartAreaRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setChartAreaWidth(entry.contentRect.width);
+        const w = entry.contentRect.width;
+        if (w > 0) setChartAreaWidth(w);
       }
     });
     observer.observe(chartAreaRef.current);
-    setChartAreaWidth(chartAreaRef.current.clientWidth);
+    const w = chartAreaRef.current.clientWidth;
+    if (w > 0) setChartAreaWidth(w);
     return () => observer.disconnect();
-  }, [isCustomChart]);
+  }, [activeTab]); // re-attach when tab changes (component remounts)
 
   const { series, options, autoHeight, isAboveBars, categories } = useMemo(
     () => buildChartData(data, columnMapping, settings),

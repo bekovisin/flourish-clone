@@ -79,6 +79,46 @@ function measureTextWidth(text: string, fontSize: number, fontFamily: string, fo
   return ctx.measureText(text).width;
 }
 
+function truncateText(text: string, maxWidth: number, fontSize: number, fontFamily: string, fontWeight: string): string {
+  const fullWidth = measureTextWidth(text, fontSize, fontFamily, fontWeight);
+  if (fullWidth <= maxWidth) return text;
+  const ellipsis = '...';
+  const ellipsisW = measureTextWidth(ellipsis, fontSize, fontFamily, fontWeight);
+  let truncated = text;
+  while (truncated.length > 0) {
+    truncated = truncated.slice(0, -1);
+    if (measureTextWidth(truncated, fontSize, fontFamily, fontWeight) + ellipsisW <= maxWidth) {
+      return truncated + ellipsis;
+    }
+  }
+  return ellipsis;
+}
+
+function wrapText(text: string, maxWidth: number, fontSize: number, fontFamily: string, fontWeight: string): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = measureTextWidth(testLine, fontSize, fontFamily, fontWeight);
+    if (testWidth > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  // Max 2 lines: second line truncated if needed
+  if (lines.length > 2) {
+    lines.length = 2;
+    lines[1] = truncateText(lines.slice(1).join(' '), maxWidth, fontSize, fontFamily, fontWeight);
+  } else if (lines.length === 2) {
+    lines[1] = truncateText(lines[1], maxWidth, fontSize, fontFamily, fontWeight);
+  }
+  return lines.length > 0 ? lines : [text];
+}
+
 function generateNiceTicks(min: number, max: number, desiredCount: number = 5): number[] {
   if (max <= min) return [0];
   const range = max - min;
@@ -119,7 +159,6 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
     const animate = (now: number) => {
       const elapsed = now - start;
       const p = Math.min(1, elapsed / duration);
-      // ease-out
       setAnimProgress(1 - Math.pow(1 - p, 3));
       if (p < 1) raf = requestAnimationFrame(animate);
     };
@@ -186,7 +225,6 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
       if (negSum < minV) minV = negSum;
     }
 
-    // Apply user min/max if set
     const userMin = settings.xAxis.min ? parseFloat(settings.xAxis.min) : undefined;
     const userMax = settings.xAxis.max ? parseFloat(settings.xAxis.max) : undefined;
 
@@ -200,8 +238,10 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
 
   // ── Layout calculations ──
   const isAboveBars = settings.labels.barLabelStyle === 'above_bars';
+  const yAxisRight = settings.yAxis.position === 'right';
   const yAxisHidden = settings.yAxis.position === 'hidden' || isAboveBars;
   const xAxisHidden = settings.xAxis.position === 'hidden';
+  const xAxisOnTop = settings.xAxis.position === 'top' || settings.xAxis.position === 'float_up';
   const flipAxis = settings.xAxis.flipAxis;
 
   const yTickStyle = settings.yAxis.tickStyling;
@@ -217,7 +257,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
       const w = measureTextWidth(cat, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight);
       if (w > maxW) maxW = w;
     }
-    return Math.min(maxW + 10, 300);
+    return maxW + 10;
   }, [categories, yAxisHidden, settings.yAxis.spaceMode, settings.yAxis.spaceModeValue, yTickStyle]);
 
   // X-axis tick generation
@@ -225,16 +265,33 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
     return generateNiceTicks(minVal, maxVal);
   }, [minVal, maxVal]);
 
+  // Measure first and last tick labels to compute edge padding
+  const xTickEdgePadding = useMemo(() => {
+    if (xAxisHidden || xTicks.length === 0) return { left: 0, right: 0 };
+    const firstLabel = formatNumber(xTicks[0], settings.numberFormatting);
+    const lastLabel = formatNumber(xTicks[xTicks.length - 1], settings.numberFormatting);
+    const firstW = measureTextWidth(firstLabel, xTickStyle.fontSize, xTickStyle.fontFamily, xTickStyle.fontWeight);
+    const lastW = measureTextWidth(lastLabel, xTickStyle.fontSize, xTickStyle.fontFamily, xTickStyle.fontWeight);
+    return { left: Math.ceil(firstW / 2) + 2, right: Math.ceil(lastW / 2) + 2 };
+  }, [xTicks, xAxisHidden, xTickStyle, settings.numberFormatting]);
+
   const xAxisHeight = xAxisHidden ? 0 : xTickStyle.fontSize + 20;
   const xAxisTitleHeight = settings.xAxis.titleType === 'custom' && settings.xAxis.titleText ? settings.xAxis.titleStyling.fontSize + 10 : 0;
   const yAxisTitleWidth = settings.yAxis.titleType === 'custom' && settings.yAxis.titleText ? settings.yAxis.titleStyling.fontSize + 10 : 0;
+  const tickPadding = settings.yAxis.tickPadding || 0;
 
-  const padding = {
-    top: settings.layout.paddingTop + 10,
-    right: settings.layout.paddingRight + 10,
-    bottom: settings.layout.paddingBottom + xAxisHeight + xAxisTitleHeight + 10,
-    left: settings.layout.paddingLeft + yAxisLabelWidth + (settings.yAxis.tickPadding || 0) + yAxisTitleWidth + 10,
-  };
+  const padding = useMemo(() => {
+    const yLabelSpace = yAxisLabelWidth + tickPadding + yAxisTitleWidth;
+    const leftEdgePad = Math.max(xTickEdgePadding.left, 10);
+    const rightEdgePad = Math.max(xTickEdgePadding.right, 10);
+
+    return {
+      top: settings.layout.paddingTop + (xAxisOnTop ? xAxisHeight + xAxisTitleHeight : 0) + 10,
+      right: settings.layout.paddingRight + (yAxisRight && !yAxisHidden ? yLabelSpace : 0) + rightEdgePad,
+      bottom: settings.layout.paddingBottom + (!xAxisOnTop ? xAxisHeight + xAxisTitleHeight : 0) + 10,
+      left: settings.layout.paddingLeft + (!yAxisRight && !yAxisHidden ? yLabelSpace : 0) + leftEdgePad,
+    };
+  }, [settings.layout, yAxisLabelWidth, tickPadding, yAxisTitleWidth, xAxisHeight, xAxisTitleHeight, yAxisRight, yAxisHidden, xAxisOnTop, xTickEdgePadding]);
 
   // Bar sizing
   const barHeight = settings.bars.barHeight;
@@ -245,7 +302,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   const computedChartHeight = categories.length * categoryHeight + padding.top + padding.bottom;
   const svgHeight = heightProp || computedChartHeight;
 
-  const plotWidth = width - padding.left - padding.right;
+  const plotWidth = Math.max(1, width - padding.left - padding.right);
   const plotHeight = svgHeight - padding.top - padding.bottom;
 
   // Scale: value -> x position
@@ -276,6 +333,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   }, []);
 
   // ── Render ──
+  if (width <= 0) return null;
+
   if (series.length === 0 || categories.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
@@ -310,15 +369,41 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   const yAxisTitle = settings.yAxis.titleType === 'custom' ? settings.yAxis.titleText : '';
   const xAxisTitle = settings.xAxis.titleType === 'custom' ? settings.xAxis.titleText : '';
 
+  // X axis Y position based on position setting
+  const xAxisYPos = xAxisOnTop ? padding.top : svgHeight - padding.bottom;
+  const xAxisTickDir = xAxisOnTop ? -1 : 1; // ticks go up when on top
+
+  // Y-axis label max width for truncation/wrapping
+  const yLabelMaxWidth = yAxisLabelWidth - 4;
+
+  // Legend height estimate for SVG export
+  const legendHeight = settings.legend.show ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
+  const totalSvgHeight = svgHeight + legendHeight;
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <svg
         ref={svgRef}
         width={width}
-        height={svgHeight}
-        viewBox={`0 0 ${width} ${svgHeight}`}
-        style={{ display: 'block', overflow: 'visible' }}
+        height={totalSvgHeight}
+        viewBox={`0 0 ${width} ${totalSvgHeight}`}
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ display: 'block' }}
       >
+        {/* Background for export */}
+        <rect x="0" y="0" width={width} height={totalSvgHeight} fill={settings.layout.backgroundColor || '#ffffff'} />
+
+        {/* Plot background */}
+        {settings.plotBackground.backgroundColor && settings.plotBackground.backgroundColor !== 'transparent' && (
+          <rect
+            x={padding.left}
+            y={padding.top}
+            width={plotWidth}
+            height={categories.length * categoryHeight}
+            fill={settings.plotBackground.backgroundColor}
+          />
+        )}
+
         {/* ── Gridlines ── */}
         {settings.xAxis.gridlines && xTicks.map((tick) => {
           const x = padding.left + xScale(tick);
@@ -328,7 +413,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
               x1={x}
               y1={padding.top}
               x2={x}
-              y2={svgHeight - padding.bottom}
+              y2={padding.top + categories.length * categoryHeight}
               stroke={gridStroke}
               strokeWidth={gridStrokeWidth}
               strokeDasharray={gridDashArray}
@@ -344,7 +429,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
               key={`ygrid-${ci}`}
               x1={padding.left}
               y1={y}
-              x2={width - padding.right}
+              x2={padding.left + plotWidth}
               y2={y}
               stroke={settings.yAxis.gridlineStyling.color}
               strokeWidth={settings.yAxis.gridlineStyling.width}
@@ -357,9 +442,9 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         {axisLineShow && (
           <line
             x1={padding.left}
-            y1={svgHeight - padding.bottom}
-            x2={width - padding.right}
-            y2={svgHeight - padding.bottom}
+            y1={xAxisYPos}
+            x2={padding.left + plotWidth}
+            y2={xAxisYPos}
             stroke={settings.xAxis.axisLine.color}
             strokeWidth={settings.xAxis.axisLine.width}
           />
@@ -368,23 +453,26 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         {/* ── X axis ticks & labels ── */}
         {!xAxisHidden && xTicks.map((tick) => {
           const x = padding.left + xScale(tick);
-          const tickY = svgHeight - padding.bottom;
           return (
             <g key={`xtick-${tick}`}>
               {tickMarksShow && (
                 <line
                   x1={x}
-                  y1={tickY}
+                  y1={xAxisYPos}
                   x2={x}
-                  y2={tickY + settings.xAxis.tickMarks.length}
+                  y2={xAxisYPos + xAxisTickDir * settings.xAxis.tickMarks.length}
                   stroke={settings.xAxis.tickMarks.color}
                   strokeWidth={settings.xAxis.tickMarks.width}
                 />
               )}
               <text
                 x={x}
-                y={tickY + (tickMarksShow ? settings.xAxis.tickMarks.length : 0) + xTickStyle.fontSize + 4}
+                y={xAxisOnTop
+                  ? xAxisYPos - (tickMarksShow ? settings.xAxis.tickMarks.length : 0) - 6
+                  : xAxisYPos + (tickMarksShow ? settings.xAxis.tickMarks.length : 0) + xTickStyle.fontSize + 4
+                }
                 textAnchor="middle"
+                dominantBaseline={xAxisOnTop ? 'auto' : 'auto'}
                 style={{
                   fontSize: xTickStyle.fontSize,
                   fontFamily: xTickStyle.fontFamily,
@@ -402,7 +490,10 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         {xAxisTitle && (
           <text
             x={padding.left + plotWidth / 2}
-            y={svgHeight - 4}
+            y={xAxisOnTop
+              ? padding.top - xAxisHeight - 4
+              : svgHeight - padding.bottom + xAxisHeight + xAxisTitleHeight - 4
+            }
             textAnchor="middle"
             style={{
               fontSize: settings.xAxis.titleStyling.fontSize,
@@ -416,22 +507,28 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         )}
 
         {/* ── Y axis title (rotated) ── */}
-        {yAxisTitle && (
-          <text
-            x={10}
-            y={padding.top + plotHeight / 2}
-            textAnchor="middle"
-            transform={`rotate(-90, 10, ${padding.top + plotHeight / 2})`}
-            style={{
-              fontSize: settings.yAxis.titleStyling.fontSize,
-              fontFamily: settings.yAxis.titleStyling.fontFamily,
-              fontWeight: settings.yAxis.titleStyling.fontWeight === 'bold' ? 700 : 400,
-              fill: settings.yAxis.titleStyling.color,
-            }}
-          >
-            {yAxisTitle}
-          </text>
-        )}
+        {yAxisTitle && (() => {
+          const titleX = yAxisRight
+            ? width - 12
+            : 12;
+          const titleY = padding.top + plotHeight / 2;
+          return (
+            <text
+              x={titleX}
+              y={titleY}
+              textAnchor="middle"
+              transform={`rotate(-90, ${titleX}, ${titleY})`}
+              style={{
+                fontSize: settings.yAxis.titleStyling.fontSize,
+                fontFamily: settings.yAxis.titleStyling.fontFamily,
+                fontWeight: settings.yAxis.titleStyling.fontWeight === 'bold' ? 700 : 400,
+                fill: settings.yAxis.titleStyling.color,
+              }}
+            >
+              {yAxisTitle}
+            </text>
+          );
+        })()}
 
         {/* ── Bars & Labels ── */}
         {categories.map((cat, ci) => {
@@ -450,25 +547,21 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
 
             const barX = value >= 0 ? stackX : stackX - barW;
 
-            // Spacing in stack
             const inStackSpacing = settings.bars.spacingInStack;
-            const actualBarH = series.length > 1 ? barHeight : barHeight;
-            const yOffset = 0;
+            const actualBarH = barHeight;
 
             const renderedW = Math.max(0, barW - (inStackSpacing > 0 && !settings.bars.outline ? inStackSpacing : 0));
             barElements.push(
               <rect
                 key={`bar-${ci}-${si}`}
                 x={padding.left + barX}
-                y={barY + yOffset}
+                y={barY}
                 width={renderedW}
                 height={actualBarH}
                 fill={s.color}
                 fillOpacity={settings.bars.barOpacity}
                 stroke={settings.bars.outline ? settings.bars.outlineColor : 'none'}
                 strokeWidth={settings.bars.outline ? settings.bars.outlineWidth : 0}
-                rx={0}
-                ry={0}
                 style={{ cursor: 'pointer', transition: 'fill-opacity 0.15s' }}
                 onMouseMove={(e) => handleBarHover(e, cat, s.name, rawValue, s.color)}
                 onMouseLeave={handleBarLeave}
@@ -508,7 +601,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                 <text
                   key={`label-${ci}-${si}`}
                   x={labelX + offsetX}
-                  y={barY + yOffset + actualBarH / 2 + offsetY}
+                  y={barY + actualBarH / 2 + offsetY}
                   textAnchor={anchor}
                   dominantBaseline="central"
                   style={{
@@ -554,6 +647,110 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
             );
           }
 
+          // Y-axis label rendering with truncation/wrapping
+          const renderYAxisLabel = () => {
+            if (yAxisHidden || isAboveBars) return null;
+
+            const useFixedWidth = settings.yAxis.spaceMode === 'fixed';
+            const maxLabelW = useFixedWidth ? settings.yAxis.spaceModeValue - 4 : yLabelMaxWidth;
+
+            const fullWidth = measureTextWidth(cat, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight);
+            const needsTruncation = fullWidth > maxLabelW && maxLabelW > 0;
+
+            // Check if label has spaces (can wrap to 2 lines)
+            const hasSpaces = cat.includes(' ');
+
+            if (yAxisRight) {
+              const labelX = padding.left + plotWidth + tickPadding + 6;
+              if (needsTruncation && hasSpaces) {
+                // Wrap to 2 lines
+                const lines = wrapText(cat, maxLabelW, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight);
+                const lineHeight = yTickStyle.fontSize * 1.2;
+                const totalH = lines.length * lineHeight;
+                return lines.map((line, li) => (
+                  <text
+                    key={`ylabel-${ci}-${li}`}
+                    x={labelX}
+                    y={barY + barHeight / 2 - totalH / 2 + lineHeight * (li + 0.7)}
+                    textAnchor="start"
+                    style={{
+                      fontSize: yTickStyle.fontSize,
+                      fontFamily: yTickStyle.fontFamily,
+                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fill: yTickStyle.color,
+                    }}
+                  >
+                    {line}
+                  </text>
+                ));
+              } else {
+                const displayText = needsTruncation
+                  ? truncateText(cat, maxLabelW, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight)
+                  : cat;
+                return (
+                  <text
+                    x={labelX}
+                    y={barY + barHeight / 2}
+                    textAnchor="start"
+                    dominantBaseline="central"
+                    style={{
+                      fontSize: yTickStyle.fontSize,
+                      fontFamily: yTickStyle.fontFamily,
+                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fill: yTickStyle.color,
+                    }}
+                  >
+                    {displayText}
+                  </text>
+                );
+              }
+            } else {
+              // Left position
+              const labelX = padding.left - tickPadding - 6;
+              if (needsTruncation && hasSpaces) {
+                const lines = wrapText(cat, maxLabelW, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight);
+                const lineHeight = yTickStyle.fontSize * 1.2;
+                const totalH = lines.length * lineHeight;
+                return lines.map((line, li) => (
+                  <text
+                    key={`ylabel-${ci}-${li}`}
+                    x={labelX}
+                    y={barY + barHeight / 2 - totalH / 2 + lineHeight * (li + 0.7)}
+                    textAnchor="end"
+                    style={{
+                      fontSize: yTickStyle.fontSize,
+                      fontFamily: yTickStyle.fontFamily,
+                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fill: yTickStyle.color,
+                    }}
+                  >
+                    {line}
+                  </text>
+                ));
+              } else {
+                const displayText = needsTruncation
+                  ? truncateText(cat, maxLabelW, yTickStyle.fontSize, yTickStyle.fontFamily, yTickStyle.fontWeight)
+                  : cat;
+                return (
+                  <text
+                    x={labelX}
+                    y={barY + barHeight / 2}
+                    textAnchor="end"
+                    dominantBaseline="central"
+                    style={{
+                      fontSize: yTickStyle.fontSize,
+                      fontFamily: yTickStyle.fontFamily,
+                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fill: yTickStyle.color,
+                    }}
+                  >
+                    {displayText}
+                  </text>
+                );
+              }
+            }
+          };
+
           return (
             <g key={`cat-${ci}`}>
               {/* Above-bars category label */}
@@ -572,95 +769,103 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   {cat}
                 </text>
               )}
-              {/* Y axis label (standard mode) */}
-              {!yAxisHidden && !isAboveBars && (
-                <text
-                  x={padding.left - (settings.yAxis.tickPadding || 0) - 6}
-                  y={barY + barHeight / 2}
-                  textAnchor="end"
-                  dominantBaseline="central"
-                  style={{
-                    fontSize: yTickStyle.fontSize,
-                    fontFamily: yTickStyle.fontFamily,
-                    fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
-                    fill: yTickStyle.color,
-                  }}
-                >
-                  {cat}
-                </text>
-              )}
+              {/* Y axis label */}
+              {renderYAxisLabel()}
               {barElements}
               {labelElements}
             </g>
           );
         })}
-      </svg>
 
-      {/* ── Legend ── */}
-      {settings.legend.show && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: settings.legend.swatchPadding,
-            justifyContent:
-              settings.legend.alignment === 'center' ? 'center'
-              : settings.legend.alignment === 'right' ? 'flex-end'
-              : 'flex-start',
-            flexDirection: settings.legend.orientation === 'vertical' ? 'column' : 'row',
-            marginTop: settings.legend.marginTop,
-            maxWidth: settings.legend.maxWidth < 100 ? `${settings.legend.maxWidth}%` : undefined,
-            paddingLeft: padding.left,
-            paddingRight: padding.right,
-          }}
-        >
-          {settings.legend.titleText && (
-            <div
-              style={{
-                fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
-                fontSize: settings.legend.size,
-                fontWeight: settings.legend.titleWeight === 'bold' ? 700 : 400,
-                color: settings.legend.color,
-                width: settings.legend.orientation === 'horizontal' ? '100%' : undefined,
-              }}
-            >
-              {settings.legend.titleText}
-            </div>
-          )}
-          {legendItems.map((item) => (
-            <div
-              key={item.name}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              <div
-                style={{
-                  width: settings.legend.swatchWidth,
-                  height: settings.legend.swatchHeight,
-                  backgroundColor: item.color,
-                  borderRadius: settings.legend.swatchRoundness,
-                  border: settings.legend.outline ? '1px solid #ccc' : undefined,
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: settings.legend.size,
-                  fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
-                  fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
-                  color: settings.legend.color,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {item.name}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* ── Legend (rendered inside SVG for proper export) ── */}
+        {settings.legend.show && (() => {
+          const legendY = svgHeight + (settings.legend.marginTop || 0);
+          let curX = padding.left;
+          const swW = settings.legend.swatchWidth;
+          const swH = settings.legend.swatchHeight;
+          const gap = settings.legend.swatchPadding || 8;
+          const fontSize = settings.legend.size;
+
+          // Compute total width for alignment
+          const itemWidths = legendItems.map((item) => {
+            const textW = measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight);
+            return swW + 4 + textW;
+          });
+          const totalWidth = itemWidths.reduce((s, w) => s + w, 0) + (legendItems.length - 1) * gap;
+
+          if (settings.legend.alignment === 'center') {
+            curX = (width - totalWidth) / 2;
+          } else if (settings.legend.alignment === 'right') {
+            curX = width - padding.right - totalWidth;
+          }
+
+          if (settings.legend.orientation === 'vertical') {
+            return legendItems.map((item, idx) => {
+              const itemY = legendY + idx * (fontSize + gap);
+              const startX = settings.legend.alignment === 'center'
+                ? width / 2 - (swW + 4 + measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)) / 2
+                : settings.legend.alignment === 'right'
+                  ? width - padding.right - swW - 4 - measureTextWidth(item.name, fontSize, settings.legend.fontFamily || 'Inter, sans-serif', settings.legend.textWeight)
+                  : padding.left;
+              return (
+                <g key={`legend-${idx}`}>
+                  <rect
+                    x={startX}
+                    y={itemY}
+                    width={swW}
+                    height={swH}
+                    fill={item.color}
+                    rx={settings.legend.swatchRoundness}
+                  />
+                  <text
+                    x={startX + swW + 4}
+                    y={itemY + swH / 2}
+                    dominantBaseline="central"
+                    style={{
+                      fontSize,
+                      fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
+                      fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
+                      fill: settings.legend.color,
+                    }}
+                  >
+                    {item.name}
+                  </text>
+                </g>
+              );
+            });
+          }
+
+          return legendItems.map((item, idx) => {
+            const x = curX;
+            curX += itemWidths[idx] + gap;
+            return (
+              <g key={`legend-${idx}`}>
+                <rect
+                  x={x}
+                  y={legendY}
+                  width={swW}
+                  height={swH}
+                  fill={item.color}
+                  rx={settings.legend.swatchRoundness}
+                />
+                <text
+                  x={x + swW + 4}
+                  y={legendY + swH / 2}
+                  dominantBaseline="central"
+                  style={{
+                    fontSize,
+                    fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
+                    fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
+                    fill: settings.legend.color,
+                  }}
+                >
+                  {item.name}
+                </text>
+              </g>
+            );
+          });
+        })()}
+      </svg>
 
       {/* ── Tooltip ── */}
       {tooltip.visible && settings.popupsPanels.showPopup && (
@@ -697,39 +902,6 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           </div>
         </div>
       )}
-
-      {/* ── Annotations ── */}
-      {(settings.annotations?.annotations || [])
-        .filter((ann) => ann.text && ann.x != null && ann.y != null)
-        .map((ann) => {
-          // Annotations: x = category index (0-based), y = value
-          const catIndex = typeof ann.x === 'number' ? ann.x : parseInt(String(ann.x), 10);
-          const yValue = typeof ann.y === 'number' ? ann.y : parseFloat(String(ann.y));
-          if (isNaN(catIndex) || isNaN(yValue)) return null;
-          const annotX = padding.left + xScale(yValue);
-          const annotY = padding.top + catIndex * categoryHeight + (isAboveBars ? labelRowHeight : 0) + barHeight / 2;
-          return (
-            <div
-              key={ann.id}
-              style={{
-                position: 'absolute',
-                left: annotX,
-                top: annotY,
-                transform: 'translate(-50%, -50%)',
-                fontSize: ann.fontSize,
-                fontWeight: ann.fontWeight === 'bold' ? 700 : 400,
-                color: ann.color,
-                backgroundColor: ann.backgroundColor,
-                padding: '2px 6px',
-                borderRadius: 3,
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {ann.text}
-            </div>
-          );
-        })}
     </div>
   );
 }

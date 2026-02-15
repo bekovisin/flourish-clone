@@ -238,8 +238,6 @@ export function YAxisSection() {
           label="Label width"
           value={settings.spaceModeValue}
           onChange={(v) => update({ spaceModeValue: v })}
-          min={30}
-          max={400}
           step={1}
           suffix="px"
         />
