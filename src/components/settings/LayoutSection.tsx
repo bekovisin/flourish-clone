@@ -68,6 +68,20 @@ export function LayoutSection() {
         value={settings.backgroundColor}
         onChange={(color) => update({ backgroundColor: color })}
       />
+
+      {/* Background Opacity */}
+      <NumberInput
+        label="Opacity"
+        value={settings.backgroundOpacity ?? 100}
+        onChange={(v) => update({ backgroundOpacity: v })}
+        min={0}
+        max={100}
+        step={1}
+        suffix="%"
+      />
+      <p className="text-[10px] text-gray-400 -mt-2 ml-[88px]">
+        0 = fully transparent
+      </p>
     </AccordionSection>
   );
 }

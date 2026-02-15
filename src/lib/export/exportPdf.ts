@@ -50,7 +50,11 @@ async function svgToVectorPdf(
   // Handle transparent background
   if (options?.transparent) {
     const bgRect = clonedSvg.querySelector('rect:first-child');
-    if (bgRect) bgRect.setAttribute('fill', 'none');
+    if (bgRect) {
+      bgRect.setAttribute('fill', 'none');
+      bgRect.setAttribute('fill-opacity', '0');
+      bgRect.removeAttribute('opacity');
+    }
   }
 
   // Create PDF with exact dimensions

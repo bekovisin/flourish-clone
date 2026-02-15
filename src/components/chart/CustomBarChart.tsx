@@ -73,12 +73,19 @@ function getContrastColor(hexColor: string): string {
   return yiq >= 128 ? '#000000' : '#ffffff';
 }
 
+function fontWeightToCSS(fw: string): number {
+  if (fw === 'bold') return 700;
+  if (fw === '600') return 600;
+  return 400;
+}
+
 function measureTextWidth(text: string, fontSize: number, fontFamily: string, fontWeight: string): number {
   if (typeof document === 'undefined') return text.length * fontSize * 0.6;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return text.length * fontSize * 0.6;
-  ctx.font = `${fontWeight === 'bold' ? 'bold ' : ''}${fontSize}px ${fontFamily}`;
+  const w = fontWeight === 'bold' ? 'bold' : fontWeight === '600' ? '600' : 'normal';
+  ctx.font = `${w} ${fontSize}px ${fontFamily}`;
   return ctx.measureText(text).width;
 }
 
@@ -279,7 +286,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   }, [categories, yAxisHidden, settings.yAxis.spaceMode, settings.yAxis.spaceModeValue, yTickStyle]);
 
   // X-axis tick generation with custom step support
-  const xTicks = useMemo(() => {
+  const xTicksAll = useMemo(() => {
     if (settings.xAxis.ticksToShowMode === 'custom') {
       const step = settings.xAxis.tickStep || 10;
       return generateCustomStepTicks(minVal, maxVal, step);
@@ -289,6 +296,33 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
     }
     return generateNiceTicks(minVal, maxVal);
   }, [minVal, maxVal, settings.xAxis.ticksToShowMode, settings.xAxis.ticksToShowNumber, settings.xAxis.tickStep]);
+
+  // Filter ticks based on label count mode + hidden labels
+  const xTicks = useMemo(() => {
+    let ticks = [...xTicksAll];
+    const hiddenSet = new Set(settings.xAxis.hiddenTickLabels || []);
+
+    // Custom label count: evenly space-reduce visible labels
+    if (settings.xAxis.tickLabelCountMode === 'custom' && settings.xAxis.tickLabelCount > 0 && settings.xAxis.tickLabelCount < ticks.length) {
+      const count = settings.xAxis.tickLabelCount;
+      const step = (ticks.length - 1) / (count - 1);
+      const visibleIndices = new Set<number>();
+      for (let i = 0; i < count; i++) {
+        visibleIndices.add(Math.round(i * step));
+      }
+      ticks = ticks.filter((_, i) => visibleIndices.has(i));
+    }
+
+    // Filter out individually hidden labels
+    if (hiddenSet.size > 0) {
+      ticks = ticks.filter((tick) => {
+        const label = formatNumber(tick, settings.numberFormatting);
+        return !hiddenSet.has(label);
+      });
+    }
+
+    return ticks;
+  }, [xTicksAll, settings.xAxis.tickLabelCountMode, settings.xAxis.tickLabelCount, settings.xAxis.hiddenTickLabels, settings.numberFormatting]);
 
   // X axis tick angle computations
   const tickAngle = settings.xAxis.tickAngle || 0;
@@ -435,7 +469,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
   const legendHeight = settings.legend.show ? settings.legend.size + 20 + (settings.legend.marginTop || 0) : 0;
   const totalSvgHeight = svgHeight + legendHeight;
 
-  // Background color - use layout bg, or transparent ('none') if not set
+  // Background color - use layout bg with opacity support
+  const bgOpacity = (settings.layout.backgroundOpacity ?? 100) / 100;
   const bgColor = settings.layout.backgroundColor || 'transparent';
 
   // Tick mark positioning helpers
@@ -464,8 +499,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
       >
-        {/* Background for export - uses layout background color */}
-        <rect x="0" y="0" width={width} height={totalSvgHeight} fill={bgColor === 'transparent' ? 'none' : bgColor} />
+        {/* Background for export - uses layout background color with opacity */}
+        <rect x="0" y="0" width={width} height={totalSvgHeight} fill={bgColor === 'transparent' ? 'none' : bgColor} fillOpacity={bgOpacity} />
 
         {/* Plot background */}
         {settings.plotBackground.backgroundColor && settings.plotBackground.backgroundColor !== 'transparent' && (
@@ -479,7 +514,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         )}
 
         {/* ── Gridlines ── */}
-        {settings.xAxis.gridlines && xTicks.map((tick) => {
+        {settings.xAxis.gridlines && xTicksAll.map((tick) => {
           const x = padding.left + xScale(tick);
           return (
             <line
@@ -530,16 +565,15 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           );
         })()}
 
-        {/* ── Zero-value Y line (at value=0 on x axis) ── */}
-        {hasZeroInRange && settings.yAxis.axisLine?.show && zeroX > 0 && zeroX < plotWidth && (
+        {/* ── Zero-value line (at value=0 on x axis) ── */}
+        {hasZeroInRange && settings.xAxis.zeroLine?.show !== false && zeroX > 0 && zeroX < plotWidth && (
           <line
             x1={padding.left + zeroX}
             y1={padding.top}
             x2={padding.left + zeroX}
             y2={padding.top + categories.length * categoryHeight}
-            stroke={settings.yAxis.axisLine.color}
-            strokeWidth={settings.yAxis.axisLine.width}
-            opacity={0.5}
+            stroke={settings.xAxis.zeroLine?.color || '#666666'}
+            strokeWidth={settings.xAxis.zeroLine?.width || 1}
           />
         )}
 
@@ -556,7 +590,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
         )}
 
         {/* ── X axis ticks & labels ── */}
-        {!xAxisHidden && xTicks.map((tick) => {
+        {!xAxisHidden && xTicks.map((tick, tickIdx) => {
           const x = padding.left + xScale(tick);
           const tickLen = settings.xAxis.tickMarks.length;
           const { y1: tmY1, y2: tmY2 } = getTickMarkY1Y2(xAxisYPos, xAxisTickDir, tickLen);
@@ -566,6 +600,10 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           const labelY = xAxisOnTop
             ? xAxisYPos - (tickMarksShow ? tickLen : 0) - 6
             : xAxisYPos + (tickMarksShow ? tickLen : 0) + xTickStyle.fontSize + 4;
+
+          // Last label padding: push the last label inward
+          const isLastTick = tickIdx === xTicks.length - 1;
+          const lastPad = isLastTick ? -(settings.xAxis.lastLabelPadding || 0) : 0;
 
           return (
             <g key={`xtick-${tick}`}>
@@ -580,15 +618,16 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                 />
               )}
               <text
-                x={x}
+                x={x + lastPad}
                 y={hasAngle ? xAxisYPos + (xAxisOnTop ? -1 : 1) * ((tickMarksShow ? tickLen : 0) + 4) : labelY}
-                textAnchor={hasAngle ? (tickAngle > 0 ? 'start' : 'end') : 'middle'}
+                textAnchor={hasAngle ? (tickAngle > 0 ? 'start' : 'end') : (isLastTick && lastPad !== 0 ? 'end' : 'middle')}
                 dominantBaseline={hasAngle ? (xAxisOnTop ? 'auto' : 'hanging') : 'auto'}
-                transform={hasAngle ? `rotate(${tickAngle}, ${x}, ${xAxisYPos + (xAxisOnTop ? -1 : 1) * ((tickMarksShow ? tickLen : 0) + 4)})` : undefined}
+                transform={hasAngle ? `rotate(${tickAngle}, ${x + lastPad}, ${xAxisYPos + (xAxisOnTop ? -1 : 1) * ((tickMarksShow ? tickLen : 0) + 4)})` : undefined}
                 style={{
                   fontSize: xTickStyle.fontSize,
                   fontFamily: xTickStyle.fontFamily,
-                  fontWeight: xTickStyle.fontWeight === 'bold' ? 700 : 400,
+                  fontWeight: fontWeightToCSS(xTickStyle.fontWeight),
+                  fontStyle: xTickStyle.fontStyle || 'normal',
                   fill: xTickStyle.color,
                 }}
               >
@@ -610,7 +649,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
             style={{
               fontSize: settings.xAxis.titleStyling.fontSize,
               fontFamily: settings.xAxis.titleStyling.fontFamily,
-              fontWeight: settings.xAxis.titleStyling.fontWeight === 'bold' ? 700 : 400,
+              fontWeight: fontWeightToCSS(settings.xAxis.titleStyling.fontWeight),
+              fontStyle: settings.xAxis.titleStyling.fontStyle || 'normal',
               fill: settings.xAxis.titleStyling.color,
             }}
           >
@@ -633,7 +673,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
               style={{
                 fontSize: settings.yAxis.titleStyling.fontSize,
                 fontFamily: settings.yAxis.titleStyling.fontFamily,
-                fontWeight: settings.yAxis.titleStyling.fontWeight === 'bold' ? 700 : 400,
+                fontWeight: fontWeightToCSS(settings.yAxis.titleStyling.fontWeight),
+                fontStyle: settings.yAxis.titleStyling.fontStyle || 'normal',
                 fill: settings.yAxis.titleStyling.color,
               }}
             >
@@ -719,7 +760,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   style={{
                     fontSize: settings.labels.dataPointFontSize,
                     fontFamily: settings.labels.dataPointFontFamily,
-                    fontWeight: settings.labels.dataPointFontWeight === 'bold' ? 700 : 400,
+                    fontWeight: fontWeightToCSS(settings.labels.dataPointFontWeight),
+                    fontStyle: settings.labels.dataPointFontStyle || 'normal',
                     fill: labelColor,
                     pointerEvents: 'none',
                   }}
@@ -749,7 +791,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                 style={{
                   fontSize: settings.labels.dataPointFontSize,
                   fontFamily: settings.labels.dataPointFontFamily,
-                  fontWeight: settings.labels.dataPointFontWeight === 'bold' ? 700 : 400,
+                  fontWeight: fontWeightToCSS(settings.labels.dataPointFontWeight),
+                  fontStyle: settings.labels.dataPointFontStyle || 'normal',
                   fill: settings.labels.dataPointColor || '#333',
                   pointerEvents: 'none',
                 }}
@@ -788,7 +831,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
-                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fontWeight: fontWeightToCSS(yTickStyle.fontWeight),
+                    fontStyle: yTickStyle.fontStyle || 'normal',
                       fill: yTickStyle.color,
                     }}
                   >
@@ -808,7 +852,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
-                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fontWeight: fontWeightToCSS(yTickStyle.fontWeight),
+                    fontStyle: yTickStyle.fontStyle || 'normal',
                       fill: yTickStyle.color,
                     }}
                   >
@@ -832,7 +877,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
-                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fontWeight: fontWeightToCSS(yTickStyle.fontWeight),
+                    fontStyle: yTickStyle.fontStyle || 'normal',
                       fill: yTickStyle.color,
                     }}
                   >
@@ -852,7 +898,8 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     style={{
                       fontSize: yTickStyle.fontSize,
                       fontFamily: yTickStyle.fontFamily,
-                      fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
+                      fontWeight: fontWeightToCSS(yTickStyle.fontWeight),
+                    fontStyle: yTickStyle.fontStyle || 'normal',
                       fill: yTickStyle.color,
                     }}
                   >
@@ -866,21 +913,31 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
           return (
             <g key={`cat-${ci}`}>
               {/* Above-bars category label */}
-              {isAboveBars && (
-                <text
-                  x={padding.left}
-                  y={catY + yTickStyle.fontSize}
-                  textAnchor="start"
-                  style={{
-                    fontSize: yTickStyle.fontSize,
-                    fontFamily: yTickStyle.fontFamily,
-                    fontWeight: yTickStyle.fontWeight === 'bold' ? 700 : 400,
-                    fill: yTickStyle.color,
-                  }}
-                >
-                  {cat}
-                </text>
-              )}
+              {isAboveBars && (() => {
+                // When zero line is hidden, align with bar left edge (padding.left)
+                // When zero line is visible, align at zero position
+                const zeroLineVisible = hasZeroInRange && settings.xAxis.zeroLine?.show !== false;
+                const aboveLabelX = zeroLineVisible
+                  ? padding.left + xScale(0)
+                  : padding.left;
+                const abPad = settings.labels;
+                return (
+                  <text
+                    x={aboveLabelX + (abPad.aboveBarPaddingLeft || 0) - (abPad.aboveBarPaddingRight || 0)}
+                    y={catY + yTickStyle.fontSize + (abPad.aboveBarPaddingTop || 0) - (abPad.aboveBarPaddingBottom || 0)}
+                    textAnchor="start"
+                    style={{
+                      fontSize: yTickStyle.fontSize,
+                      fontFamily: yTickStyle.fontFamily,
+                      fontWeight: fontWeightToCSS(yTickStyle.fontWeight),
+                      fontStyle: yTickStyle.fontStyle || 'normal',
+                      fill: yTickStyle.color,
+                    }}
+                  >
+                    {cat}
+                  </text>
+                );
+              })()}
               {/* Y axis label */}
               {renderYAxisLabel()}
               {barElements}
@@ -936,7 +993,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                     style={{
                       fontSize,
                       fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
-                      fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
+                      fontWeight: fontWeightToCSS(settings.legend.textWeight),
                       fill: settings.legend.color,
                     }}
                   >
@@ -967,7 +1024,7 @@ export function CustomBarChart({ data, columnMapping, settings, width, height: h
                   style={{
                     fontSize,
                     fontFamily: settings.legend.fontFamily || 'Inter, sans-serif',
-                    fontWeight: settings.legend.textWeight === 'bold' ? 700 : 400,
+                    fontWeight: fontWeightToCSS(settings.legend.textWeight),
                     fill: settings.legend.color,
                   }}
                 >

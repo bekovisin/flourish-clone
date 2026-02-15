@@ -19,6 +19,7 @@ import type {
   DataPointLabelColorMode,
   StackLabelMode,
   LabelsSettings,
+  FontWeight,
 } from '@/types/chart';
 
 function SubHeader({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 const fontFamilyOptions = [
   'Inter, sans-serif',
   'Roboto, sans-serif',
+  'Montserrat, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',
@@ -71,6 +73,49 @@ export function LabelsSection() {
           </SelectContent>
         </Select>
       </SettingRow>
+
+      {/* Above-bar label padding */}
+      {settings.barLabelStyle === 'above_bars' && (
+        <div className="space-y-2 pl-2 border-l-2 border-gray-100">
+          <p className="text-[10px] text-gray-400">Above-bar label padding</p>
+          <NumberInput
+            label="Top"
+            value={settings.aboveBarPaddingTop || 0}
+            onChange={(v) => update({ aboveBarPaddingTop: v })}
+            min={-50}
+            max={50}
+            step={1}
+            suffix="px"
+          />
+          <NumberInput
+            label="Right"
+            value={settings.aboveBarPaddingRight || 0}
+            onChange={(v) => update({ aboveBarPaddingRight: v })}
+            min={-50}
+            max={50}
+            step={1}
+            suffix="px"
+          />
+          <NumberInput
+            label="Bottom"
+            value={settings.aboveBarPaddingBottom || 0}
+            onChange={(v) => update({ aboveBarPaddingBottom: v })}
+            min={-50}
+            max={50}
+            step={1}
+            suffix="px"
+          />
+          <NumberInput
+            label="Left"
+            value={settings.aboveBarPaddingLeft || 0}
+            onChange={(v) => update({ aboveBarPaddingLeft: v })}
+            min={-50}
+            max={50}
+            step={1}
+            suffix="px"
+          />
+        </div>
+      )}
 
       {/* DATA POINT LABELS */}
       <SubHeader>Data Point Labels</SubHeader>
@@ -181,14 +226,30 @@ export function LabelsSection() {
           <SettingRow label="Font weight">
             <Select
               value={settings.dataPointFontWeight}
-              onValueChange={(v) => update({ dataPointFontWeight: v as 'normal' | 'bold' })}
+              onValueChange={(v) => update({ dataPointFontWeight: v as FontWeight })}
             >
               <SelectTrigger className="h-8 text-xs w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
                 <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <SettingRow label="Font style">
+            <Select
+              value={settings.dataPointFontStyle || 'normal'}
+              onValueChange={(v) => update({ dataPointFontStyle: v as 'normal' | 'italic' })}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="italic" className="text-xs">Italic</SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>

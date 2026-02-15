@@ -15,11 +15,12 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition, YAxisSpaceMode } from '@/types/chart';
+import type { YAxisPosition, ScaleType, AxisTitleType, TickPosition, YAxisSpaceMode, FontWeight } from '@/types/chart';
 
 const fontFamilyOptions = [
   'Inter, sans-serif',
   'Roboto, sans-serif',
+  'Montserrat, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',
@@ -159,7 +160,7 @@ export function YAxisSection() {
           <SettingRow label="Font weight">
             <Select
               value={settings.titleStyling.fontWeight}
-              onValueChange={(v: 'normal' | 'bold') =>
+              onValueChange={(v: FontWeight) =>
                 update({
                   titleStyling: { ...settings.titleStyling, fontWeight: v },
                 })
@@ -169,8 +170,27 @@ export function YAxisSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="bold">Bold</SelectItem>
+                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
+                <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+          <SettingRow label="Font style">
+            <Select
+              value={settings.titleStyling.fontStyle || 'normal'}
+              onValueChange={(v) =>
+                update({
+                  titleStyling: { ...settings.titleStyling, fontStyle: v as 'normal' | 'italic' },
+                })
+              }
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+                <SelectItem value="italic" className="text-xs">Italic</SelectItem>
               </SelectContent>
             </Select>
           </SettingRow>
@@ -269,25 +289,42 @@ export function YAxisSection() {
       />
 
       <SettingRow label="Weight">
-        <div className="flex rounded-md border border-gray-200 overflow-hidden">
-          {(['normal', 'bold'] as const).map((w) => (
-            <button
-              key={w}
-              onClick={() =>
-                update({
-                  tickStyling: { ...settings.tickStyling, fontWeight: w },
-                })
-              }
-              className={`px-3 py-1.5 text-xs transition-colors ${
-                settings.tickStyling.fontWeight === w
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-              } ${w === 'bold' ? 'border-l border-gray-200' : ''}`}
-            >
-              {w === 'normal' ? 'Normal' : 'Bold'}
-            </button>
-          ))}
-        </div>
+        <Select
+          value={settings.tickStyling.fontWeight}
+          onValueChange={(v: FontWeight) =>
+            update({
+              tickStyling: { ...settings.tickStyling, fontWeight: v },
+            })
+          }
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+            <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
+            <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      <SettingRow label="Font style">
+        <Select
+          value={settings.tickStyling.fontStyle || 'normal'}
+          onValueChange={(v) =>
+            update({
+              tickStyling: { ...settings.tickStyling, fontStyle: v as 'normal' | 'italic' },
+            })
+          }
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+            <SelectItem value="italic" className="text-xs">Italic</SelectItem>
+          </SelectContent>
+        </Select>
       </SettingRow>
 
       <SettingRow label="Font family">

@@ -23,6 +23,8 @@ import type {
   XAxisSettings,
   TicksToShowMode,
   TickMarkPosition,
+  TickLabelCountMode,
+  FontWeight,
 } from '@/types/chart';
 
 function SubHeader({ children }: { children: React.ReactNode }) {
@@ -38,6 +40,7 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 const fontFamilyOptions = [
   'Inter, sans-serif',
   'Roboto, sans-serif',
+  'Montserrat, sans-serif',
   'Arial',
   'Helvetica',
   'Georgia',
@@ -86,14 +89,30 @@ function StylingPanel({ styling, onChange }: StylingPanelProps) {
       <SettingRow label="Font weight">
         <Select
           value={styling.fontWeight}
-          onValueChange={(v) => onChange({ fontWeight: v as 'normal' | 'bold' })}
+          onValueChange={(v) => onChange({ fontWeight: v as FontWeight })}
         >
           <SelectTrigger className="h-8 text-xs w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+            <SelectItem value="600" className="text-xs">Semi-bold</SelectItem>
             <SelectItem value="bold" className="text-xs">Bold</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      <SettingRow label="Font style">
+        <Select
+          value={styling.fontStyle || 'normal'}
+          onValueChange={(v) => onChange({ fontStyle: v as 'normal' | 'italic' })}
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="normal" className="text-xs">Normal</SelectItem>
+            <SelectItem value="italic" className="text-xs">Italic</SelectItem>
           </SelectContent>
         </Select>
       </SettingRow>
@@ -149,6 +168,10 @@ export function XAxisSection() {
 
   const update = (updates: Partial<XAxisSettings>) => {
     updateSettings('xAxis', updates);
+  };
+
+  const updateZeroLine = (updates: Partial<XAxisSettings['axisLine']>) => {
+    update({ zeroLine: { ...(settings.zeroLine || { show: true, width: 1, color: '#666666' }), ...updates } });
   };
 
   const updateTitleStyling = (updates: Partial<AxisStyling>) => {
@@ -467,6 +490,87 @@ export function XAxisSection() {
           )}
         </>
       )}
+
+      {/* ZERO LINE */}
+      <SubHeader>Zero Line</SubHeader>
+      <p className="text-[10px] text-gray-400 -mt-1 mb-2">
+        The vertical line at value 0 on the X axis.
+      </p>
+
+      <SettingRow label="Show zero line" variant="inline">
+        <Switch
+          checked={settings.zeroLine?.show !== false}
+          onCheckedChange={(checked) => updateZeroLine({ show: checked })}
+        />
+      </SettingRow>
+
+      {settings.zeroLine?.show !== false && (
+        <div className="space-y-3 pl-2 border-l-2 border-gray-100">
+          <ColorPicker
+            label="Color"
+            value={settings.zeroLine?.color || '#666666'}
+            onChange={(color) => updateZeroLine({ color })}
+          />
+
+          <NumberInput
+            label="Width"
+            value={settings.zeroLine?.width || 1}
+            onChange={(v) => updateZeroLine({ width: v })}
+            min={0.5}
+            max={5}
+            step={0.5}
+            suffix="px"
+          />
+        </div>
+      )}
+
+      {/* LABEL COUNT */}
+      <SubHeader>Label Visibility</SubHeader>
+      <p className="text-[10px] text-gray-400 -mt-1 mb-2">
+        Control how many tick labels are visible.
+      </p>
+
+      <SettingRow label="Mode">
+        <Select
+          value={settings.tickLabelCountMode || 'all'}
+          onValueChange={(v) => update({ tickLabelCountMode: v as TickLabelCountMode })}
+        >
+          <SelectTrigger className="h-8 text-xs w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-xs">All</SelectItem>
+            <SelectItem value="custom" className="text-xs">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      {settings.tickLabelCountMode === 'custom' && (
+        <NumberInput
+          label="Label count"
+          value={settings.tickLabelCount || 0}
+          onChange={(v) => update({ tickLabelCount: v })}
+          min={0}
+          max={100}
+          step={1}
+        />
+      )}
+
+      {/* LAST LABEL PADDING */}
+      <SubHeader>Last Label</SubHeader>
+      <p className="text-[10px] text-gray-400 -mt-1 mb-2">
+        Push the last (rightmost) tick label inward so it&apos;s not clipped.
+      </p>
+
+      <NumberInput
+        label="Inward padding"
+        value={settings.lastLabelPadding || 0}
+        onChange={(v) => update({ lastLabelPadding: v })}
+        min={0}
+        max={100}
+        step={1}
+        suffix="px"
+      />
     </AccordionSection>
   );
 }

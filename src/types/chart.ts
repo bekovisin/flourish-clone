@@ -61,10 +61,15 @@ export type StackLabelMode = 'none' | 'net_sum' | 'separate';
 
 export interface LabelsSettings {
   barLabelStyle: BarLabelStyle;
+  aboveBarPaddingTop: number;
+  aboveBarPaddingRight: number;
+  aboveBarPaddingBottom: number;
+  aboveBarPaddingLeft: number;
   showDataPointLabels: boolean;
   dataPointFontSize: number;
   dataPointFontFamily: string;
-  dataPointFontWeight: 'normal' | 'bold';
+  dataPointFontWeight: FontWeight;
+  dataPointFontStyle: FontStyle;
   dataPointColorMode: DataPointLabelColorMode;
   dataPointColor: string;
   dataPointSeriesColors: Record<string, string>;
@@ -86,10 +91,14 @@ export type TickPosition = 'default' | 'left' | 'right';
 export type TicksToShowMode = 'auto' | 'number' | 'custom';
 export type TickMarkPosition = 'outside' | 'inside' | 'cross';
 
+export type FontWeight = 'normal' | 'bold' | '600';
+export type FontStyle = 'normal' | 'italic';
+
 export interface AxisStyling {
   fontFamily: string;
   fontSize: number;
-  fontWeight: 'normal' | 'bold';
+  fontWeight: FontWeight;
+  fontStyle?: FontStyle;
   color: string;
 }
 
@@ -106,6 +115,8 @@ export interface AxisLineSettings {
   width: number;
   color: string;
 }
+
+export type TickLabelCountMode = 'all' | 'custom';
 
 export interface XAxisSettings {
   position: AxisPosition;
@@ -125,8 +136,13 @@ export interface XAxisSettings {
   ticksToShowMode: TicksToShowMode;
   ticksToShowNumber: number;
   tickStep: number;
+  tickLabelCountMode: TickLabelCountMode;
+  tickLabelCount: number;
+  hiddenTickLabels: string[];
+  lastLabelPadding: number;
   tickMarks: TickMarksSettings;
   axisLine: AxisLineSettings;
+  zeroLine: AxisLineSettings;
   gridlines: boolean;
   gridlineStyling: { color: string; width: number; dashArray: number };
   showGridlineStyling: boolean;
@@ -244,6 +260,7 @@ export interface LayoutSettings {
   paddingBottom: number;
   paddingLeft: number;
   backgroundColor: string;
+  backgroundOpacity: number;
 }
 
 // Header

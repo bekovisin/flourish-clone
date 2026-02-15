@@ -61,7 +61,11 @@ async function svgToCanvas(
 
     if (options?.transparent) {
       const bgRect = clonedSvg.querySelector('rect:first-child');
-      if (bgRect) bgRect.setAttribute('fill', 'none');
+      if (bgRect) {
+        bgRect.setAttribute('fill', 'none');
+        bgRect.setAttribute('fill-opacity', '0');
+        bgRect.removeAttribute('opacity');
+      }
     }
 
     const svgWidth = parseFloat(clonedSvg.getAttribute('width') || '800');

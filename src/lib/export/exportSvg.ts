@@ -18,11 +18,13 @@ export async function exportSvg(
       clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
       clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
 
-      // If transparent requested, remove or make background rect transparent
+      // If transparent requested, remove background rect entirely
       if (options?.transparent) {
         const bgRect = clonedSvg.querySelector('rect:first-child');
         if (bgRect) {
           bgRect.setAttribute('fill', 'none');
+          bgRect.setAttribute('fill-opacity', '0');
+          bgRect.removeAttribute('opacity');
         }
       }
 
